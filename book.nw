@@ -1,19 +1,31 @@
-(define has-edgeo (lambda (g u v)
+@code_type scheme .scm
+@comment_type ;; %s
+@compiler lit -t book.lit && scheme --quiet book.scm
 
-  @ First we need to figure out which of u and v is larger. This has the added benefit of implicitly asserting that 
+@title Data Structures and Algorithms in miniKanren 
+
+@s Main
+
+--- book.scm
+(define has-edgeo (lambda (g u v)
+---
+
+First we need to figure out which of u and v is larger. This has the added benefit of implicitly asserting that
+
+--- book.scm +=
   (fresh (m n)
     (<o m n)
     (conde [(== u m) (== v n)] [(== u m) (== v n)])
+---
 
-@ So now we know that n must be at least 1. It cannot be zero since it is greater than some other natural number.
+So now we know that $n$ must be at least 1. It cannot be zero since it is greater than some other natural number.
 
+--- book.scm +=
     (fresh (n-1)
       (== n `(() . ,n-1))
-    
-    
-@
+---
 
-Here we reveal the internal representation of g. It is an \emph{adjacency pyramid} and pictured is such a representation for the diamond graph TODO. It is a jagged array of decreasing size representing the fields of the upper diagonal of an adjacency matrix.
+Here we reveal the internal representation of g. It is an *adjacency pyramid* and pictured is such a representation for the diamond graph TODO. It is a jagged array of decreasing size representing the fields of the upper diagonal of an adjacency matrix.
 
 Since vertices are represented as natural numbers, these things are relatively easy to "index" into using a recursive pattern.
 
@@ -21,12 +33,13 @@ Since vertices are represented as natural numbers, these things are relatively e
       (!!o g u inner)
       (!!o inner v-1 #t)))))
 
-@ Here is that recursive pattern. The name here is inspired by Haskell's (!!) operator.
+Here is that recursive pattern. The name here is inspired by Haskell's (!!) operator.
 
 (define !!o (lambda (list index val)
   (fresh (first rest)
   
-@ If you want to index into a list to retrieve a value, it must be nonempty.
+
+If you want to index into a list to retrieve a value, it must be nonempty.
 
     (== array `(,first . ,rest))
     (conde
@@ -37,7 +50,7 @@ Since vertices are represented as natural numbers, these things are relatively e
 
 
 
-@ Remember the double-meaning of nondeterminism: A deterministic algorithm that verifies is equivalent to a nondeterministic algorithm that computes!
+Remember the double-meaning of nondeterminism: A deterministic algorithm that verifies is equivalent to a nondeterministic algorithm that computes!
 
 There is a path in the graph g between vertices u and v that walks through a list of intermediate vertices.
 
@@ -45,7 +58,7 @@ There is a path in the graph g between vertices u and v that walks through a lis
   (conde
 
 
-@ Let's say we're writing a verifier. And someone comes to us asking whether there's a path between u and v that doesn't pass through any intermediate vertices. Well then there's gotta be an edge from u to v! Our prover has given us nothing else to work with so we hope for the best.
+Let's say we're writing a verifier. And someone comes to us asking whether there's a path between u and v that doesn't pass through any intermediate vertices. Well then there's gotta be an edge from u to v! Our prover has given us nothing else to work with so we hope for the best.
 
     [(== intermediate '()) (has-edgeo g u v)]
 
@@ -61,16 +74,16 @@ With has-patho available, it becomes very easy to create its counterpart, has-cy
 
 (define has-cycleo1 (lambda (g u intermediate v)
 
-@ A cycle is just a path that ends in a back edge
+A cycle is just a path that ends in a back edge
 
   (has-patho u intermediate v)
   (has-edgeo v u)
   
-@ But the path must be of at least length 2 in order to fulfill the requirement that the cycle needs to have at least 3 vertices. So there must be at least one other vertex w in the path.
+But the path must be of at least length 2 in order to fulfill the requirement that the cycle needs to have at least 3 vertices. So there must be at least one other vertex w in the path.
 
   (fresh (w rest) (== intermediate `(,w . ,rest)))))
   
-@ Notice in this first attempt that the last expression in the conjunction is \emph{relationally equivalent} to (pairo intermediate). And we should reorder the clauses to put the most expensive call last. Below is the refactor.
+Notice in this first attempt that the last expression in the conjunction is *relationally equivalent* to `(pairo intermediate)`. And we should reorder the clauses to put the most expensive call last. Below is the refactor.
 
 (define has-cycleo (lambda (g u intermediate v)
   (pairo intermediate)
@@ -78,5 +91,7 @@ With has-patho available, it becomes very easy to create its counterpart, has-cy
   (has-patho u intermediate v)))
   
   
+
+
 
 
