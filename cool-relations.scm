@@ -2,12 +2,13 @@
 
 ;; $ cd ~
 ;; $ git clone https://github.com/webyrd/miniKanren-with-symbolic-constraints.git
-;; (require "~/miniKanren-with-symbolic-constraints/mk.scm")
+(load "~/miniKanren-with-symbolic-constraints/mk.scm")
 ;; ^ uncomment if you want to use this version of miniKanren.
 
 ;; $ cd ~
 ;; $ git clone https://github.com/webyrd/CodeFromTheReasonedSchemer2ndEd.git
-(load "~/CodeFromTheReasonedSchemer2ndEd/trs2-impl.scm")
+;; (load "~/CodeFromTheReasonedSchemer2ndEd/trs2-impl.scm")
+;; ^ if this is not imported, then we CANNOT use defrel.
 
 ;; For a particular graph theory problem, I need to randomly divide a list of n items among 3 buckets. But I had the additional constraint that the first two buckets must be nonempty.
 
@@ -17,7 +18,7 @@
 
 ;; Here was my first attempt.
 
-(defrel (divide-among-1-bucketo elements bucket)
+(define divide-among-1-bucketo (lambda (elements bucket)
   (conde
     ;; If there are no elements, then none can be added into the sole bucket.
     [(== elements '()) (== bucket '())]
@@ -34,13 +35,13 @@
       (== rest `(,first . ,bucket-containing-rest))
       
       ;; 2. Recursively divide the rest of the elements into a bucket.
-      (divide-among-1-bucketo elements bucket-containing-rest))]))
+      (divide-among-1-bucketo elements bucket-containing-rest))])))
       
 ;; All this ends up doing is copy all the elements into the single bucket. Notice that this is [eta-equivalent] to the equality relation on two lists.
 
 ;; A more exciting case is with 2 lists. Now at each step there is an option about which list to allocate the next element into. Notice that this is NOT like the "team captains" picking players.
 
-(defrel (divide-among-2-bucketso elements bucket1 bucket2)
+(define divide-among-2-bucketso (lambda (elements bucket1 bucket2)
   (conde
   
     ;; To be extra careful, let's split among all 3 cases.
@@ -62,7 +63,7 @@
           ;; Allocate first into bucket2
           [(fresh (rest-bucket2)
             (== bucket2 `(,first . ,rest-bucket2))
-            (divide-among-2-bucketso rest bucket1 rest-bucket2))]))]))
+            (divide-among-2-bucketso rest bucket1 rest-bucket2))]))])))
             
 ;; Here's what the output looks like:
 
@@ -106,7 +107,7 @@
 
 ;; But now it becomes clear that the additive name for this operation is some kind of weave. Let's call it weave2o and rewrite the implementation, recurring on two lists l1 and l2 to "weave together" into an output lout.
 
-(defrel (weave2o l1 l2 lout)
+(define weave2o (lambda (l1 l2 lout)
   (conde
     ;; Let's recur on BOTH l1 and l2, just to be safe and avoid any overlapping conde cases.
     
@@ -139,7 +140,7 @@
         ;; make a choice about whether or not to lead lout with l1-first or with l2-first. Then, make a recursive call, either substituting l1 for l1-rest (and essentially "removing" the first element, since its already been used). Or substituting l2 for l2-rest.
         (conde
           [(== lout-first l1-first) (weave2o l1-rest l2 lout-rest)]
-          [(== lout-first l2-first) (weave2o l1 l2-rest lout-rest)])))]))
+          [(== lout-first l2-first) (weave2o l1 l2-rest lout-rest)])))])))
 
 ;; > (run 31 (a b c) (weave2o a b c))
 ;; ...
@@ -147,7 +148,7 @@
 
 ;; Let's do another attempt at weave2o, taking advantage of a case collapsing.
 
-(defrel (weave2o l1 l2 lout)
+(define weave2o (lambda (l1 l2 lout)
   ;; Let's try just splitting on l1, rather than splitting on both l1 and l2.
   (conde
     ;; If l1 is empty, then the only thing that could contribute to the "weave" output is l2, regardless of whether l2 is empty or nonempty.
@@ -167,22 +168,22 @@
           (== l2 `(,l2-first . ,l2-rest))
           (conde
             [(== lout `(,l1-first . ,lout-rest)) (weave2o l1-rest l2 lout-rest)]
-            [(== lout `(,l2-first . ,lout-rest)) (weave2o l1 l2-rest lout-rest)]))]))]))
+            [(== lout `(,l2-first . ,lout-rest)) (weave2o l1 l2-rest lout-rest)]))]))])))
 
 
 ;; Notice in the first attempt of weave2o, there are some fresh variables that never get unified. So really, what's being checked is whether or not l1 and l2 are nonempty.
 
 ;; Let's defire relational analogs to Scheme's nil? and pair? to save on semantically unneccesary fresh variables.
-(defrel (nilo x)
-  (== x '()))
+(define nilo (lambda (x)
+  (== x '())))
   
-(defrel (pairo x)
-  (fresh (first rest) (== x `(,first . ,rest))))
+(define pairo (lambda (x)
+  (fresh (first rest) (== x `(,first . ,rest)))))
   
 ;; Finally I will revisit merge2o one last time, taking advantage of the new list predicates for conciseness, and renaming lout to weave.
 
 
-(defrel (weave2o l1 l2 weave)
+(define weave2o (lambda (l1 l2 weave)
   (conde
     ;; Consider all cases to avoid overlap.
     
@@ -202,24 +203,24 @@
       
       (conde
         [(== weave-first l1-first) (weave2o l1-rest l2 weave-rest)]
-        [(== weave-first l2-first) (weave2o l1 l2-rest weave-rest)]))]))
+        [(== weave-first l2-first) (weave2o l1 l2-rest weave-rest)]))])))
         ;; TODO: I still might need to come back to this to avoid 2 recursive calls in 2 branches of the conde.
     
 
 ;; It is not to difficult to extend this to weave1o and weave3o. I'll start with the easier case of weave1o that's been seen a couple times.
 
-(defrel (weave1o l1 weave)
+(define weave1o (lambda (l1 weave)
   (conde
     [(nilo l1) (nilo weave)]
-    [(pairo l1) (== weave l1)]))
+    [(pairo l1) (== weave l1)])))
     
 ;; This is again just checking for equality between l1 and weave. So it can be rewritten as the following.
-(defrel (weave1o l1 weave)
-  (== l1 weave))
+(define weave1o (lambda (l1 weave)
+  (== l1 weave)))
   
 
 ;; Now onto the more difficult case of weave3o.
-(defrel (weave3o l1 l2 l3 weave)
+(define weave3o (lambda (l1 l2 l3 weave)
   (conde
     ;; Again, let's recur on all 3 lists just to be safe and avoid overlapping cases.
     
@@ -258,36 +259,36 @@
         
        
       ;; Place the recursive call at the bottom using "rec" variables as opposed to making 3 recursive calls, one in each of the conde branches.
-      (weave3o l1-rec l2-rec l3-rec weave-rest))]))
+      (weave3o l1-rec l2-rec l3-rec weave-rest))])))
   
 ;; Unfortunately, this definition of weave3o always leaves one of the lists empty. So the search is incomplete.
 
 ;; I will try again using the fact that you can weave the first two lists together, and then the third list to their result. Weaving is associative and commutative.
-(defrel (weave3o2 l1 l2 l3 weave)
+(define weave3o2 (lambda (l1 l2 l3 weave)
   (fresh (weavel1l2)
     (weave2o l1 l2 weavel1l2)
-    (weave2o weavel1l2 l3 weave)))
+    (weave2o weavel1l2 l3 weave))))
 
 ;; This gives the same results. Let's change it up somewhat.
-(defrel (weave3o3 l1 l2 l3 weave)
+(define weave3o3 (lambda (l1 l2 l3 weave)
   (fresh (weavel2l3)
     (weave2o l2 l3 weavel2l3)
-    (weave2o weavel2l3 l1 weave)))
+    (weave2o weavel2l3 l1 weave))))
 
 ;; weaveo can be the n-ary generalized version.
 ;; Weave each list l in ls together.
-(defrel (weaveo ls out)
+(define weaveo (lambda (ls out)
   (conde
     [(== ls '()) (== out '())]
     [(fresh (singleton) (== ls `(,singleton)) (== out singleton))]
     [(fresh (first second rest out-rec) (== ls `(,first ,second . ,rest))
       (weave2o first out-rec out)
-      (weaveo ls out-rec))]))
+      (weaveo ls out-rec))])))
     
 
 ;; Here is a version of odd-cycleo that does not act on an existing graph. It just builds an odd cycle.
 
-(defrel (odd-cycleo vertices edges)
+(define odd-cycleo (lambda (vertices edges)
   (conde
     ;; Base case: the 3-cycle
     [(fresh (v0 v1 v2)
@@ -298,69 +299,69 @@
     [(fresh (u x y v rest-v rest-e)
       (== vertices `(,u ,x ,y ,v . ,rest-v))
       (== edges `( (,u ,x) (,x ,y) (,y ,v) . ,rest-e))
-      (odd-cycleo `(,u ,v . ,rest-v) `( (,u ,v) . ,rest-e)))])) 
+      (odd-cycleo `(,u ,v . ,rest-v) `( (,u ,v) . ,rest-e)))])))
 
 
 ;; Here is the specification for the "root node" of a "simultaneous collapse", which must be a tree rather than a general graph. (Loops cause a contradiction, to be proved).
 
-(defrel (root-collapso vertices edges white blue-parents blue-children)
+(define root-collapso (lambda (vertices edges white blue-parents blue-children)
   (pairo blue-parents)
   (pairo blue-children)
   (weave3o white blue-parents blue-children vertices)
-  (odd-cycleo vertices edges))
+  (odd-cycleo vertices edges)))
   
 
 ;; The above never seems to give white vertices. Is there a problem with weave3o when nonempty is specified?
-(defrel (weave3-l1-nonemptyo l1 l2 l3 weave)
+(define weave3-l1-nonemptyo (lambda (l1 l2 l3 weave)
   (pairo l1)
-  (weave3o l1 l2 l3 weave))
+  (weave3o l1 l2 l3 weave)))
 
 
 ;; Set relations (for sets of natural numbers)
 
 ;; We represent a set of natural numbers as a sorted list of natural numbers.
 ;; Where a natural number is represented as a list of units.
-(defrel (emptyo s)
-  (== s '()))
+(define emptyo (lambda (s)
+  (== s '())))
 
-(defrel (singletono s x)
-  (== s `(,x)))
+(define singletono (lambda (s x)
+  (== s `(,x))))
 
-(defrel (zeroo nat)
-  (== nat '()))
+(define zeroo (lambda (nat)
+  (== nat '())))
   
-(defrel (not-zeroo nat)
-  (fresh (x) (== nat `(() . ,x))))
+(define not-zeroo (lambda (nat)
+  (fresh (x) (== nat `(() . ,x)))))
 
-(defrel (plus1o nat succ-nat)
-  (== `(() . ,nat) succ-nat))
+(define plus1o (lambda (nat succ-nat)
+  (== `(() . ,nat) succ-nat)))
   
-(defrel (pluso n m out)
+(define pluso (lambda (n m out)
   (conde
     [(zeroo n) (== m out)]
     [(fresh (n-1 out-1)
       (plus1o n-1 n)
       (plus1o out-1 out)
-      (pluso n-1 m out-1))]))
+      (pluso n-1 m out-1))])))
 
-(defrel (leqo n m)
+(define leqo (lambda (n m)
   (conde
     [(zeroo n)]
     [(fresh (n-1 m-1)
       (plus1o n-1 n)
       (plus1o m-1 m)
-      (leqo n-1 m-1))]))
+      (leqo n-1 m-1))])))
 
-(defrel (less-thano n m)
+(define less-thano (lambda (n m)
   (conde
     [(zeroo n) (not-zeroo m)]
     [(fresh (n-1 m-1)
       (plus1o n-1 n)
       (plus1o m-1 m)
-      (less-thano n-1 m-1))]))
+      (less-thano n-1 m-1))])))
 
 ;; insert a number into a sorted list as long as the element is not already in the sorted list
-(defrel (inserto sorted-list elem out)
+(define inserto (lambda (sorted-list elem out)
   (conde
     [(== sorted-list '()) (== out `(,elem))]
     [(fresh (first sorted-rest inserted-rest)
@@ -370,54 +371,126 @@
 
         [(less-thano first elem)
           (== out `(,first . ,inserted-rest))
-          (inserto sorted-rest elem inserted-rest)]))]))
+          (inserto sorted-rest elem inserted-rest)]))])))
       
+(define compareo (lambda (n m sout)
+  (conde
+    [(less-thano n m) (== sout 'lt)]
+    [(== n m)         (== sout 'eq)]
+    [(less-thano m n) (== sout 'gt)])))
+
+(define uniono (lambda (s1 s2 out)
+  (conde
+    ;; The union of two empty sets is the empty set.
+    [(== s1 '()) (== s2 '()) (== out '())]
+    
+    ;; The union of an empty set and a nonempty set is the nonempty set.
+    [(== s1 '()) (pairo s2) (== out s2)]
+    [(pairo s1) (== s2 '()) (== out s1)]
+    
+    ;; But when both sets are non-empty, then they both contain a least element.
+    [(fresh (s1-first s1-rest s2-first s2-rest comparison out-first out-rest s1-rec s2-rec)
+      
+      
+      (==  s1 `( ,s1-first .  ,s1-rest))
+      (==  s2 `( ,s2-first .  ,s2-rest))
+      (== out `(,out-first . ,out-rest))
+
+      ;; This can be thought of as a branching comparison
+      (compareo s1-first s2-first comparison)
+      (conde
+
+        ;; The following 2 cases mirror each other. If the elements differ, then include the smaller of the two and recurse
+        [(== comparison 'lt)
+          (== out-first s1-first)
+          (== s1-rec s1-rest)
+          (== s2-rec s2)]
+        
+        [(== comparison 'gt)
+          (== out-first s2-first)
+          (== s1-rec s1)
+          (== s2-rec s2-rest)]
+
+        ;; If it was an element common to both sets, then include it only once
+        [(== comparison 'eq)
+          (== out-first s1-first) ;; or (== out-first s2-first), they mean the same thing here
+          (== s1-rec s1-rest)
+          (== s2-rec s2-rest)])
+      
+      (uniono s1-rec s2-rec out-rest))])))
+
+
+(define intersectiono (lambda (s1 s2 out)
+  (conde
+    ;; If either set is empty, then the intersection is empty
+    [(== s1 '()) (== out '())]
+    [(== s2 '()) (== out '())]
+    
+    ;; Otherwise it must be the case that both sets have a least element
+    [(fresh (s1-first s1-rest s2-first s2-rest out-rest s1-rec s2-rec comparison)
+      (== s1 `(,s1-first . ,s1-rest))
+      (== s2 `(,s2-first . ,s2-rest))
+      
+      (compareo s1-first s2-first comparison)
+      
+      (conde
+        ;; If their least element is the same, then include it in the intersection
+        [(== comparison 'eq)
+          (== out `(,s1-first . ,out-rest))
+          (== s1-rec s1-rest)
+          (== s2-rec s2-rest)]
+        
+        ;; Otherwise, discard the lesser element. It is known to not be in both sets, otherwise it wolud have been the least element of both.
+        [(== comparison 'lt)
+          (== s1-rec s1-rest)
+          (== s2-rest s2)
+          (== out out-rest)]
+        
+        [(== comparison 'gt)
+          (== s1-rec s1)
+          (== s2-rec s2-rest)
+          (== out out-rest)])
+
+      (intersectiono s1-rec s2-rec out-rest))])))
 
 
 ;; Graph relations
-
-(defrel (has-complete-bipartite-subgrapho edges left right)) ;; stub
-
-(defrel (<=>o g l r) (has-complete-bipartite-subgrapho g l r))
-
 
 
 
 ;;;; Equivalence logical blocks.
 ;; Consider the two relations:
-(defrel (foo1o x) (== x 7))
-
-(defrel (bar1o x) (== x 7))
+(define foo1o (lambda (x) (== x 7)))
+(define bar1o (lambda (x) (== x 7)))
 
 ;; These relations are certainly equivalent because they have the exact same defrel body, just two different names. But notice that the following two relations are also equivalent.
 
-(defrel (foo2o x) (== x 7))
-
-(defrel (bar2o y) (== y 7))
+(define foo2o (lambda (x) (== x 7)))
+(define bar2o (lambda (y) (== y 7)))
 
 ;; The name of the variable is arbitrary, and so as long as every symbol used in a first defrel maps to one -- and only one -- corresponding symbol in the secord relation, then the relations are the same.
 
 ;; More advanced equivalences.
 
-(defrel (foo3o x y)
+(define foo3o (lambda (x y)
   (== x 7)
-  (== y 'salmon))
+  (== y 'salmon)))
   
-(defrel (bar3o z w)
+(define bar3o (lambda (z w)
   (== w 'salmon)
-  (== z 7))
+  (== z 7)))
   
 ;; The following 2 relations are also equivalent, but only in the broader definition that, given enough time, the result found in one will be found in the other. They will not return the values in the same order when called with `run` in this version of miniKanren.
 
-(defrel (foo4o x)
+(define foo4o (lambda (x)
   (conde
     [(== x 'hello)]
-    [(== x 'goodbye)]))
+    [(== x 'goodbye)])))
     
-(defrel (bar4o y)
+(define bar4o (lambda (y)
   (conde
     [(== y 'goodbye)]
-    [(== y 'hello)]))
+    [(== y 'hello)])))
 
 
 
