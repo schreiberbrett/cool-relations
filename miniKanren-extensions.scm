@@ -645,9 +645,284 @@
     (mcflurry 82 87)))
 
 
-  
-  
-  
-  
+
+(defrel (riffleo l r o)
+    (fresh (l1 l2 l3 r1 r2 r3 o1 o2)
+        (conde
+            ((== `(,l ,r ,o) `(         ()          ()          ())))
+
+            ((== `(,l ,r ,o) `((,l1 . ,l2)          () (,l1 . ,l2))))
+
+            ((== `(,l ,r ,o) `(         () (,r1 . ,r2) (,r1 . ,r2))))
+
+            ((== `(,l ,r ,o) `((,l1 . ,l2) (,r1 . ,r2) (,o1 . ,o2)))
+
+                (conde
+                    ((== `(,o1 ,l3 ,r3) `(,l1 ,l2 ,r)))
+                    ((== `(,o1 ,l3 ,r3) `(,r1 ,l ,r2))))
+
+                (riffleo l3 r3 o2)))))
 
 
+(defrel (evalo x)
+    (fresh (x0 x1 x2 x3 x4 x5 x6)
+        (conde
+            ((== x `(x0 = x1)) (== x0 x1))
+            ((== x `(,x0 + ,x1 = ,x2)) (+o x0 x1 x2))
+            ((== x `(,x0 = ,x1 + 1)) (succo x0 x1))
+            ((== x `(,x0 < ,x1)) (<o x0 x1))
+            ((== x `(,x0 > ,x1)) (>o x0 x1))
+            ((== x `(,x0 >= ,x1)) (>=o x0 x1)))))
+
+(defrel (evalo* x)
+    (conde
+        ((== x '()))
+        ((== x `(,first . ,rest))
+            (evalo first)
+            (evalo* rest))))
+
+            
+(defrel (reverse-and-appendo l r out)
+    (conde
+        ((== l '()) (== r out))
+        ((fresh (car-l cdr-l)
+            (== l `(,car-l . ,cdr-l))
+            (reverse-and-appendo cdr-l `(,car-l . ,r) out)))))
+
+;;(defrel (reverseo abc cba) (reverse-and-appendo abc '() cba))
+
+(define (reverseo p q)
+    (lambda (s)
+        (lambda ()
+            (let ((p (walk p s)) (q (walk q s)))
+                ((cond
+                    ((and (list? p) (list? q)) (== p (reverse q)))
+                    ((and (list? p) (var? q)) (== (reverse p) q))
+                    ((and (var? p) (list? q)) (== p (reverse q)))
+                    ((and (var? p) (var? q)) (reverse-and-appendo p '() q))
+                    (else fail)) s))))) ;; Fails due to type mismatch
+
+(defrel (converto n h)
+    (conde
+        ((== n '(0 0 0 0)) (== h '0))
+        ((== n '(0 0 0 1)) (== h '1))
+        ((== n '(0 0 1 0)) (== h '2))
+        ((== n '(0 0 1 1)) (== h '3))
+        ((== n '(0 1 0 0)) (== h '4))
+        ((== n '(0 1 0 1)) (== h '5))
+        ((== n '(0 1 1 0)) (== h '6))
+        ((== n '(0 1 1 1)) (== h '7))
+        ((== n '(1 0 0 0)) (== h '8))
+        ((== n '(1 0 0 1)) (== h '9))
+        ((== n '(1 0 1 0)) (== h 'A))
+        ((== n '(1 0 1 1)) (== h 'B))
+        ((== n '(1 1 0 0)) (== h 'C))
+        ((== n '(1 1 0 1)) (== h 'D))
+        ((== n '(1 1 1 0)) (== h 'E))
+        ((== n '(1 1 1 1)) (== h 'F))))
+
+(defrel (converto* ns hs)
+    (conde
+        ((== ns '()) (== hs '()))
+        ((fresh (car-ns cdr-ns car-hs cdr-hs)
+            (== ns `(,car-ns . ,cdr-ns))
+            (== hs `(,car-hs . ,cdr-hs))
+            (converto car-ns car-hs)
+            (converto* cdr-ns cdr-hs)))))
+
+
+
+(defrel (group-into-fourso n g)
+    (fresh (n1 g1)
+        (reverseo n n1)
+        (reverseo g g1)
+        (group-into-fours-helpero n1 g1)))
+
+        
+(defrel (group-into-fours-helpero n g)
+    (fresh (b0 b1 b2 b3 rest g-rest)
+        (conde
+            ((== n '()) (== g '()))
+            ((== n `(,b0)) (== g `((0 0 0 ,b0))))
+            ((== n `(,b0 ,b1)) (== g `((0 0 ,b1 ,b0))))
+            ((== n `(,b0 ,b1 ,b2)) (== g `((0 ,b2 ,b1 ,b0))))
+            ((== n `(,b0 ,b1 ,b2 ,b3 . ,rest))
+                (== g `((,b3 ,b2 ,b1 ,b0) . ,g-rest))
+                (group-into-fours-helpero rest g-rest)))))
+
+
+(defrel (binary-hexo binary hex)
+    (fresh (fours)
+        (group-into-fourso binary fours)
+        (converto* fours hex)))
+        
+
+;; (defrel (convert2o 
+        
+(define (time-suppress-output x) (time (and #t x)))
+        
+(defrel (binary-hex2o binary hex)
+    (fresh (b h)
+        (reverseo binary b)
+        (reverseo hex h)
+        (convert2o b h)))
+        
+(defrel (convert2o b h)
+    (conde
+        ((== b '()) (== h '()))
+        ;; ((== b '(0)) (== h '(0))) ;; Disallow ending in 0
+        ((== b '(1)) (== h '(1)))
+        ;; ((== b '(0 0)) (== h '(0)))
+        ;; ((== b '(1 0)) (== h '(1)))
+        ((== b '(0 1)) (== h '(2)))
+        ((== b '(1 1)) (== h '(3)))
+        ;; ((== b '(0 0 0)) (== h '(0)))
+        ;; ((== b '(1 0 0)) (== h '(1)))
+        ;; ((== b '(0 1 0)) (== h '(2)))
+        ;; ((== b '(1 1 0)) (== h '(3)))
+        ((== b '(0 0 1)) (== h '(4)))
+        ((== b '(1 0 1)) (== h '(5)))
+        ((== b '(0 1 1)) (== h '(6)))
+        ((== b '(1 1 1)) (== h '(7)))
+        
+        ((fresh (x y z w rest o out-rest)
+            (== b `(,x ,y ,z ,w . ,rest))
+            (== h `(,o . ,out-rest))
+
+            (conde
+                ((== `(,x ,y ,z ,w) '(0 0 0 0)) (== o '0))
+                ((== `(,x ,y ,z ,w) '(1 0 0 0)) (== o '1))
+                ((== `(,x ,y ,z ,w) '(0 1 0 0)) (== o '2))
+                ((== `(,x ,y ,z ,w) '(1 1 0 0)) (== o '3))
+                ((== `(,x ,y ,z ,w) '(0 0 1 0)) (== o '4))
+                ((== `(,x ,y ,z ,w) '(1 0 1 0)) (== o '5))
+                ((== `(,x ,y ,z ,w) '(0 1 1 0)) (== o '6))
+                ((== `(,x ,y ,z ,w) '(1 1 1 0)) (== o '7))
+                ((== `(,x ,y ,z ,w) '(0 0 0 1)) (== o '8))
+                ((== `(,x ,y ,z ,w) '(1 0 0 1)) (== o '9))
+                ((== `(,x ,y ,z ,w) '(0 1 0 1)) (== o 'A))
+                ((== `(,x ,y ,z ,w) '(1 1 0 1)) (== o 'B))
+                ((== `(,x ,y ,z ,w) '(0 0 1 1)) (== o 'C))
+                ((== `(,x ,y ,z ,w) '(1 0 1 1)) (== o 'D))
+                ((== `(,x ,y ,z ,w) '(0 1 1 1)) (== o 'E))
+                ((== `(,x ,y ,z ,w) '(1 1 1 1)) (== o 'F)))
+            
+            (convert2o rest out-rest)))))
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+(defrel (needs-3-colorso graph subgraph proof)
+    (fresh (order o1 i1 o1i1 subproof1 i2 o2 o2i2 subproof2)
+        (conde
+            ((odd-cycleo graph subgraph order)
+                (== proof `(odd-cycle ,order)))
+
+            ((xio graph subgraph o1 i1 i2 o2)
+                (== proof `(xi ,o1 ,i1 ,i2 ,o2 ,subproof1 ,subproof2))
+                (disjoint-uniono o1 i1 o1i1)
+                (disjoint-uniono o2 i2 o2i2)
+                (needs-3-colorso graph o1i1 subproof1)
+                (needs-3-colorso graph o2i2 subproof2)))))
+                
+                
+(defrel (odd-cycleo graph subgraph order) (fail))
+
+
+;; A graph is a lexicographically ordered edgelist
+(define my-graph `(
+    (0 . 4)
+    (0 . 6)
+    (0 . 7)
+    (1 . 3)
+    (1 . 4)
+    (1 . 5)
+    (2 . 5)
+    (2 . 7)
+    (3 . 5)
+    (5 . 7)))
+
+(defrel (has-triangleo graph u v w)
+    (fresh (rest)
+        (riffleo `((,u . ,v) (,u . ,w) (,v . ,w)) rest graph)))
+
+
+#|
+(defrel (partition-edgeso pivot x lo hi)
+    (fresh ()
+        (conde
+            ((== l '()) (== lo '()) (== hi '()))
+            
+            ((== l `(,first . ,rest))
+                (conde
+                    ((edge-<o first pivot) )
+                    ((edge-<o pivot first) ))
+                    
+                (partition-edgeso pivot rest lo-rec hi-rec)))))
+        
+(defrel (sort-edgeso x o)
+    (fresh (pivot rest lower higher)
+        (conde
+            ((== x '()) (== o '()))
+            ((== x `(,pivot . ,rest))
+                (partition-edgeso pivot rest lower higher)
+                (appendo l `(,pivot . ,h) o)
+                (sort-edgeso lower l)
+                (sort-edgeso higher h)))))
+|#
+
+
+(defrel (edge-<o l r)
+    (fresh (ul vl ur vr)
+        (== l `(,ul . ,vl))
+        (== r `(,ur . ,vr))
+        
+        ;; these two may be redundant
+        (<o ul vl)
+        (<o ur vr)
+
+        (conde
+            ((== ul ur) (<o vl vr))
+            ((<o ul ur)))))
+            
+(defrel (sort-3-edgeso l3 sorted)
+    (fresh (e1 e2 e3 a b c bc)
+        (== `(,e1 ,e2 ,e3) l3)
+        (== `(,a ,b ,c) sorted)
+        (riffleo `(,a) bc l)
+        (riffleo `(,b) `(,c) bc)
+        (edge-<o a b)
+        (edge-<o b c)))
+
+(defrel (edgeo unsorted sorted)
+    (fresh (a b c d)
+        (== `(,a . ,b) unsorted)
+        (== `(,c . ,d) sorted)
+        (conde
+            ((== `(,a . ,b) `(,c . ,d)))
+            ((== `(,a . ,b) `(,d . ,c))))
+        (<o c d)))
+    
+(defrel (has-odd-patho graph odd-path)
+    (fresh (u v w uv vw e1 e2 e1l e1r e2l e2r rest)
+        (== odd-path `(,u ,v ,w))
+            (edgeo `(,u . ,v) `(,e1l . ,e1r))
+            (edgeo `(,v . ,w) `(,e2l . ,e2r))
+            (picko e1 `(,e2) `((,e1l . ,e1r) (,e2l . ,e2r)))
+            (riffleo `(,e1 ,e2) rest graph)))
+            
+(defrel (has-odd-path2o graph odd-path)
+    (fresh (a b c e1 e2 rest-1 rest-2)
+        (== odd-path `(,a ,b ,c))
+        (edgeo `(,a . ,b) e1)
+        (edgeo `(,b . ,c) e2)
+        (picko e1 rest-1 graph)
+        (picko e2 rest-2 rest-1)))
+
+    
