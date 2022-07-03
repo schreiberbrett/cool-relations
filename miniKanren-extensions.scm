@@ -650,17 +650,12 @@
     (fresh (l1 l2 l3 r1 r2 r3 o1 o2)
         (conde
             ((== `(,l ,r ,o) `(         ()          ()          ())))
-
             ((== `(,l ,r ,o) `((,l1 . ,l2)          () (,l1 . ,l2))))
-
             ((== `(,l ,r ,o) `(         () (,r1 . ,r2) (,r1 . ,r2))))
-
             ((== `(,l ,r ,o) `((,l1 . ,l2) (,r1 . ,r2) (,o1 . ,o2)))
-
                 (conde
                     ((== `(,o1 ,l3 ,r3) `(,l1 ,l2 ,r)))
                     ((== `(,o1 ,l3 ,r3) `(,r1 ,l ,r2))))
-
                 (riffleo l3 r3 o2)))))
 
 
@@ -912,11 +907,11 @@
 (defrel (has-odd-patho graph odd-path)
     (fresh (u v w uv vw e1 e2 e1l e1r e2l e2r rest)
         (== odd-path `(,u ,v ,w))
-            (edgeo `(,u . ,v) `(,e1l . ,e1r))
-            (edgeo `(,v . ,w) `(,e2l . ,e2r))
-            (picko e1 `(,e2) `((,e1l . ,e1r) (,e2l . ,e2r)))
-            (riffleo `(,e1 ,e2) rest graph)))
-            
+        (edgeo `(,u . ,v) `(,e1l . ,e1r))
+        (edgeo `(,v . ,w) `(,e2l . ,e2r))
+        (picko e1 `(,e2) `((,e1l . ,e1r) (,e2l . ,e2r)))
+        (riffleo `(,e1 ,e2) rest graph)))
+
 (defrel (has-odd-path2o graph odd-path)
     (fresh (a b c e1 e2 rest-1 rest-2)
         (== odd-path `(,a ,b ,c))
@@ -925,4 +920,304 @@
         (picko e1 rest-1 graph)
         (picko e2 rest-2 rest-1)))
 
+
+(defrel (partitiono pivot l lo hi)
+    (fresh (first rest lo-rec hi-rec)
+        (conde
+            ((== l '()) (== lo '()) (== hi '()))
+            ((== l `(,first . ,rest))
+                (conde
+                    ((<=o first pivot) (== lo `(,first . ,lo-rec)) (== hi hi-rec))
+                    ((>o first pivot) (== hi `(,first . ,hi-rec)) (== lo lo-rec)))
+                    
+                (partitiono pivot rest lo-rec hi-rec)))))
+
+        
+(defrel (sorto unsorted sorted)
+    (conde
+        ((== unsorted '()) (== sorted '()))
+        
+        ((fresh (pivot rest lo hi l h)
+            (== unsorted `(,pivot . ,rest))
+            (appendo l `(,pivot . ,h) sorted)
+            (partitiono pivot rest hi lo)
+            (sorto lo l)
+            (sorto hi h)))))
+
+            
+(defrel (sort-nondeto unsorted sorted)
+    (fresh (x first second others rest)
+        (conde
+            ((== unsorted '()) (== sorted '()))
+            ((== unsorted `(,x)) (== sorted `(,x)))
+            
+            ((== sorted `(,first ,second . ,rest))
+                (picko first others unsorted)
+                (<=o first second)
+                (sort-nondeto others `(,second . ,rest))))))
+
+        
+(defrel (odd-listo l)
+    (fresh (t a b c)
+        (conde
+            ((== l `(,t)))
+            ((== l `(,a ,b . ,c)) (odd-listo c)))))
+            
+(defrel (even-listo r)
+    (fresh (x y z)
+        (conde
+            ((== r '()))
+            ((== r `(,x ,y . ,z)) (even-listo z)))))
+
+;; Step 1: make the conjunction its own relation
+(defrel (odd-and-even-list1o l r)
+    (odd-listo l)
+    (even-listo r))
+
     
+;; Step 2: replace each body with its definition
+(defrel (odd-and-even-list2o l r)
+    (fresh (t a b c)
+        (conde
+            ((== l `(,t)))
+            ((== l `(,a ,b . ,c)) (odd-listo c))))
+    (fresh (x y z)
+        (conde
+            ((== r '()))
+            ((== r `(,x ,y . ,z)) (even-listo z)))))
+            
+;; Step 3: Bubble up fresh (resolve any naming clashes. Luckily my names don't clash)
+(defrel (odd-and-even-list3o l r)
+    (fresh (t a b c x y z)
+        (conde
+            ((== l `(,t)))
+            ((== l `(,a ,b . ,c)) (odd-listo c)))
+        (conde
+            ((== r '()))
+            ((== r `(,x ,y . ,z)) (even-listo z)))))
+
+;; Step 4: Logical FOIL: (A \/ B) /\ (C \/ D) --> (A /\ C) \/ (A /\ D) \/ (B /\ C) \/ (B /\ D)
+(defrel (odd-and-even-list4o l r)
+    (fresh (t a b c x y z)
+        (conde
+            ((== l `(,t)) (== r '()))
+            ((== l `(,t)) (== r `(,x ,y . ,z)) (even-listo z))
+            ((== l `(,a ,b . ,c)) (odd-listo c) (== r '()))
+            ((== l `(,a ,b . ,c)) (odd-listo c)) (== r `(,x ,y . ,z)) (even-listo z))))
+            
+;; Step 5: Sort unifications and non-unifications
+(defrel (odd-and-even-list5o l r)
+    (fresh (t a b c x y z)
+        (conde
+            (
+                (== l `(,t)) (== r '()))
+            (
+                (== l `(,t)) (== r `(,x ,y . ,z))
+                (even-listo z))
+            (
+                (== l `(,a ,b . ,c)) (== r '())
+                (odd-listo c))
+            (
+                (== l `(,a ,b . ,c)) (== r `(,x ,y . ,z))
+                (odd-listo c)) (even-listo z))))
+                
+;; Step 6: Detect conjunctions, 
+(defrel (odd-and-even-list6o l r)
+    (fresh (t a b c x y z)
+        (conde
+            (
+                (== l `(,t)) (== r '()))
+            (
+                (== l `(,t)) (== r `(,x ,y . ,z))
+                (odd-and-even-list6o `(,t) z))
+            (
+                (== l `(,a ,b . ,c)) (== r '())
+                (odd-and-even-list6o c '()))
+            (
+                (== l `(,a ,b . ,c)) (== r `(,x ,y . ,z))
+                (odd-and-even-list6o c z)))))
+                
+;; Step 7: Will's law: (A /\ X) \/ (B /\ X) --> (A \/ B) /\ X
+(defrel (odd-and-even-list7o l r)
+    (fresh (t a b c x y z g1 g2)
+        (conde
+            (
+                (== l `(,t)) (== r '()))
+            ((conde
+                (
+                    (== l `(,t)) (== r `(,x ,y . ,z))
+                    (== g1 `(,t)) (== g2 z))
+                (
+                    (== l `(,a ,b . ,c)) (== r '())
+                    (== g1 c) (== g2 '()))
+                (
+                    (== l `(,a ,b . ,c)) (== r `(,x ,y . ,z))
+                    (== g1 c) (== g2 z)))
+                    
+                (odd-and-even-list7o g1 g2)))))
+                
+                
+(defrel (x-bar-baro x)
+    (fresh (specifier x-bar1 x-bar2 head complement adjunct)
+        (sepecifiero specifier)
+        (x-baro x-bar1)
+        (x-baro x-bar2)
+        (xo head)
+        (complemento complement)
+        (adjuncto adjunct)
+        (== x `(,specifier (,x-bar1 (,x-bar2 ,head ,complement) ,adjunct)))))
+                
+
+                
+;; Relational red-black tree adapted from https://cs3110.github.io/textbook/chapters/ds/rb.html
+(defrel (coloro x)
+    (conde
+        ((== x 'red))
+        ((== x 'black))))
+        
+        
+(defrel (red-black-treeo x)
+    (conde
+        ((== x 'leaf))
+        ((fresh (c v l r)
+            (== x `(node ,c ,v ,l ,r))
+            (coloro c)
+            (red-black-treeo l)
+            (red-black-treeo r)))))
+
+(defrel (emptyo x)
+    (== x 'leaf))
+    
+;; direct implementation
+(defrel (membero x t)
+    (fresh (c l v r)
+        (== t `(node ,c ,v ,l ,r))
+        (conde
+            ((<o x v) (membero x l))
+            ((>o x v) (membero x r))
+            ((== x v)))))
+
+;; prioritize unification, extract recursive call to membero
+(defrel (membero x t)
+    (fresh (c v l r)
+        (== t `(node ,c ,v ,l ,r))
+        (conde
+            ((== x v))
+            ((fresh (a0)
+                (conde
+                    ((<o x v) (== a0 l))
+                    ((>o x v) (== a0 r)))
+                (membero x a0))))))
+
+
+(defrel (rotateo t o)
+    (fresh (x y z a b c d)
+        (== o `(node red ,y (node black ,x ,a ,b) (node black ,z ,c ,d)))
+        
+        (conde
+            ((== t
+                `(node black ,z 
+                    (node red ,y
+                        (node red ,x
+                            ,a
+                            ,b)
+                        ,c)
+                    ,d)))
+
+            ((== t
+                `(node black ,z 
+                    (node red ,x
+                        ,a
+                        (node red ,y
+                            ,b
+                            ,c))
+                    ,d)))
+        
+            ((== t
+                `(node black ,x
+                    ,a
+                    (node red ,y
+                        ,b
+                        (node red ,z
+                            ,c
+                            ,d)))))
+                        
+            ((== t
+                `(node black ,x
+                    ,a
+                    (node red ,z
+                        (node red ,y
+                            ,b
+                            ,c)
+                        ,d)))))))
+
+
+        
+(defrel (insert-auxo x t o)
+    (conde
+        ((== t 'leaf) (== o `(node red ,x leaf leaf)))
+        
+        ((fresh (c l v r rec)
+            (== t `(node ,c ,l ,v ,r))
+            (conde
+                ((<o x v) (balanceo  
+                ((>o x v)
+                ((== x v) (== o t))))))))))
+        
+        
+        
+        
+        
+(defrel (sumo l o)
+    (fresh (car-l cadr-l cdr-l)
+        (conde
+            ((== l '()) (== o 0))
+            ((== l `(,car-l)) (== o car-l)))))
+        
+        
+
+(defrel (bretto list a b)
+    (fresh (y z)
+        (+o a b z)
+        (riffleo `(,a ,b) y list)
+        (primeo z)))
+        
+
+(defrel (riffleo a b o)
+    (fresh (car-a cdr-a car-b cdr-b car-o cdr-o z0 z1)
+        (conde
+            ;; When one of `a` or `b` is empty
+            ((== a '()) (== b '()) (== o '()))
+            ((== a `(,car-a . ,cdr-a)) (== b '()) (== o a))
+            ((== a '()) (== b `(,car-b . ,cdr-b)) (== o b))
+            
+            ;; When both `a` and `b` are nonempty
+            ((== a `(,car-a . ,cdr-a)) (== b `(,car-b . ,cdr-b)) (== o `(,car-o . ,cdr-o))
+                (conde
+                    ((== car-o car-a) (== z0 cdr-a) (== z1 b))
+                    ((== car-o car-b) (== z0 a) (== z1 cdr-b)))
+                    
+                (riffleo z0 z1 cdr-o)))))
+        
+
+(define (build-num n)
+  (cond
+    ((zero? n) '())
+    ((even? n)
+     (cons 0
+       (build-num (quotient n 2))))
+    ((odd? n)
+     (cons 1
+       (build-num (quotient (- n 1) 2))))))
+
+(define (unbuild-num n)
+    (cond
+        ((null? n) 0)
+        (else (+ (car n) (* 2 (unbuild-num (cdr n)))))))
+        
+(define (deep-unbuild-num l)
+    (cond
+        ((or (null? l) (eq? (car l) 0) (eq? (car l) 1))
+            (unbuild-num l))
+        (else
+            (map deep-unbuild-num l))))

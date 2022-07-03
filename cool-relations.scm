@@ -494,8 +494,36 @@
 
 
 
+    
 
-
-
+    
+    
+    
+    
+    
+    
+    
+(define mk-assoco (lambda (defrels assocs)
+    (conde
+        ((== defrels '()) (== assocs '()))
+        ((fresh (name args body rest-defrels rest-assocs)
+            (== defrels `( (defrel (,name . ,args) . ,body) . ,rest-defrels))
+            (== assocs `( ( ,name . (,args . ,body) ) . ,rest-assocs))
+            (mk-assoco rest-defrels rest-assocs))))))
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
 
