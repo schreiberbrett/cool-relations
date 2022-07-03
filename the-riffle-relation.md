@@ -1,6 +1,8 @@
+Brett Schreiber, 3 July 2022
+
 I like to watch movies. One thing I've started to notice is an editing style known as [cross-cutting](https://en.wikipedia.org/Cross-cutting). This is where two scenes are edited to be shown to the audience at the same time. My favorite example is from Christopher Nolan's _Inception_, which cuts back and forth between different scenes to convey simultaneous action in both levels of the dream.
 
-Here is the best picture I found online of cross-editing.
+Here is the best picture I found online of cross-cutting.
 
 ![](https://www.filmeditingpro.com/wp-content/uploads/2018/09/Crosscutting_01b.jpg)
 
@@ -12,15 +14,15 @@ Consider the way a dealer shuffles cards like in the below GIF. Two separate dec
 
 ![](https://www.geogebra.org/resource/wbf3as26/nNXngeMdvMRfGZiL/material-wbf3as26.png)
 
-This discrete analogy work much better for modeling a relationship in miniKanren.
+There is a more obvious correspondence here between decks of cards and miniKanern lists.
 
 # THe riffle relation
 
-Consider the relationship between a list `a`, a list `b` and the riffled output `o`. We wil write the miniKanren code as if it is checking to make sure the riffled output is correct. Let's take care of the easy case:
+Consider the relationship between a list `a`, a list `b` and the riffled output `o`. We will write the miniKanren code as if it is checking to make sure the riffled output is correct. First, the easy case:
 
-* If one of `a` or `b` is empty then the riffle output is is equal to the other list. (This actually covers the first case).
+* If one of `a` or `b` is empty then the riffle output is is equal to the other list.
 
-In code, this would be:
+In miniKanren, this would be:
 
 ```scheme
 (defrel (riffleo a b o)
@@ -100,7 +102,7 @@ Notice that our previous definition of `riffleo` leaves recursive calls within t
                 (riffleo z0 z1 z2)))))
 ```
 
-We can extract out the common `(== z2 cdr-o)` from both clauses of the inner `conde`. Once again this is a simple correctness preserving transformation.
+We can extract out the common `(== z2 cdr-o)` from both clauses of the inner `conde`. This is another correctness-preserving transformation.
 
 ```scheme
 (defrel (riffleo a b o)
@@ -140,7 +142,20 @@ We can eagerly unify `z2` and `cdr-o` in order to remove all uses of `z2` in the
                 (riffleo z0 z1 cdr-o)))))
 ```
 
-Since the only recursive call is in the final `conde` clause, this relation 
+Since the only recursive call is in the final `conde` clause, this relation satisfies Will's law.
+
+# Some mathematical properties of riffling
+
+Here is a brief detour into some useful observations about riffling, asserted without proofs:
+
+1. Riffling is _associative_, that is, it does not matter what order a collection of lists is riffled together, all orderings are equivalent. Look for example at the cross-cutting picture from above. It doesn't make sense to reason about which two of the three scenes were cross-cut together first -- they are all equally riffled together.
+2. Riffling is _commutative_. In the GIF of the decks of cards above, the dealer could have swapped the two decks in his hands and the result could produce the same shuffled deck.
+3. Riffling two lists together produces an output list whose length equals the sum of the lengths of its input lists. In the deck of cards GIF, no cards are created or destroyed, and we are confident that the 
+4. If some element `a` comes before some element `b` in one of the input lists to a riffle, then `a` must also come before `b` in the output list. Riffling, in some sense, preserves order of its input lists.
+
+The last two properties are also true of appending two lists together. In fact, riffling is just a generalization of appending, especially since appending two lists constitutes a valid riffle.
+
+> This section is reserved for a future proof using equational reasoning to show that the miniKanren implementation of `riffleo` exhibits the above properties.
 
 # A surprising application
 
@@ -152,7 +167,7 @@ Since this relationship involves addition, we need to import the `pluso` relatio
 (load "~/CodeFromTheReasonedSchemer2ndEd/trs2-arith.scm")
 ```
 
-Let's write a miniKanren relation in the style of "nondeterministic programming". That is, we will take advantage of the fact that each relation can produce multiple answers, and we code along the "happy path", assuming that the answer returned is the one we were looking for.
+Let's write a miniKanren relation in the style of **nondeterministic programming**. We will take advantage of the fact that each relation can produce multiple answers, and we code along the "happy path", assuming that the answer returned is the one we were looking for.
 
 Once again, consider the base case first since it is easier. 
 - If there are no numbers in `l` to pick, then there are no partitions to make.
@@ -172,7 +187,7 @@ But for the recursive case, how do you choose 3 elements from a list? Well, you 
 ((b c d) (a c d) (a b c) (a b d))
 ```
 
-So we can use `riffleo` _nondeterministically_ to pick three elements from `l`. Note also that this yields the elements of the list that are **not** chosen.
+So we can use `riffleo` _nondeterministically_ to pick three elements from `l`. Note also that this yields the elements of the list that are not chosen. We capture these in `rest-l`.
 ```scheme
 (defrel (three-partitiono l partitions sum)
     (fresh (e0 e1 e2 rest-l)
@@ -266,9 +281,15 @@ It produces a solution, but for readability's sake we can apply `deep-unbuild-nu
 
 This matches our expectation per the aforementioned Wikipedia example that there is a three-partitioning of the given list of integers, whose partitions each sum to 90.
 
+# Acknowledgements
 
+This implementation of miniKanren (`trs2-impl.scm` and `trs2-arith.scm`) was provided from [Github](https://github.com/TheReasonedSchemer2ndEd/CodeFromTheReasonedSchemer2ndEd) by Daniel P. Friedman, William E. Byrd, Oleg Kiselyov, and Jason Hemann.
 
-The code from this article, in full:
+Thank you to [John Hydrisko](https://johnhydrisko.substack.com/) for proofreading this article.
+
+# Reference
+
+The final Scheme code from this article, in full:
 ```scheme
 (load "~/CodeFromTheReasonedSchemer2ndEd/trs2-impl.scm")
 (load "~/CodeFromTheReasonedSchemer2ndEd/trs2-arith.scm")
