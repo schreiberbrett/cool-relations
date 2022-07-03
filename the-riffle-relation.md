@@ -2,7 +2,7 @@ I like to watch movies. One thing I've started to notice is an editing style kno
 
 Here is the best picture I found online of cross-editing.
 
-!(https://www.filmeditingpro.com/wp-content/uploads/2018/09/Crosscutting_01b.jpg)
+![](https://www.filmeditingpro.com/wp-content/uploads/2018/09/Crosscutting_01b.jpg)
 
 This made me think that there's a relationship between two source scenes and the final cross-cut output. But film scenes are continuous, they exist on a timeline. So I need to think of a new analogy that works better with miniKanren's discrete lists and symbols.
 
@@ -10,7 +10,7 @@ This made me think that there's a relationship between two source scenes and the
 
 Consider the way a dealer shuffles cards like in the below GIF. Two separate decks get combined into one larger deck.
 
-!(https://www.geogebra.org/resource/wbf3as26/nNXngeMdvMRfGZiL/material-wbf3as26.png)
+![](https://www.geogebra.org/resource/wbf3as26/nNXngeMdvMRfGZiL/material-wbf3as26.png)
 
 This discrete analogy work much better for modeling a relationship in miniKanren.
 
