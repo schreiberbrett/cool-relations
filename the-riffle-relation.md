@@ -16,7 +16,7 @@ Consider the way a dealer shuffles cards like in the below GIF. Two separate dec
 
 There is a more obvious correspondence here between decks of cards and miniKanern lists.
 
-# THe riffle relation
+# The riffle relation
 
 Consider the relationship between a list `a`, a list `b` and the riffled output `o`. We will write the miniKanren code as if it is checking to make sure the riffled output is correct. First, the easy case:
 
