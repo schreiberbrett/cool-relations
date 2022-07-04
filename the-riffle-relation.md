@@ -310,7 +310,7 @@ This matches our expectation per the aforementioned Wikipedia example that there
 
 How could we model this mixing GIF relationally?
 
-![](https://en.wikipedia.org/wiki/Mixing_%28mathematics%29#/media/File:Baker's_map_mixing.gif)
+![](https://upload.wikimedia.org/wikipedia/commons/8/8c/Baker%27s_map_mixing.gif)
 
 # Acknowledgements
 
