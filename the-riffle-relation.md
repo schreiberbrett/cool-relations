@@ -1,6 +1,6 @@
 Brett Schreiber, 3 July 2022
 
-I like to watch movies. One thing I've started to notice is an editing style known as [cross-cutting](https://en.wikipedia.org/Cross-cutting). This is where two scenes are edited to be shown to the audience at the same time. My favorite example is from Christopher Nolan's _Inception_, which cuts back and forth between different scenes to convey simultaneous action in both levels of the dream.
+I like to watch movies. One thing I've started to notice is an editing style known as [cross-cutting](https://en.wikipedia.org/Cross-cutting). This is where two scenes are edited to be shown to the audience at the same time. My favorite example is from Christopher Nolan's _Inception_, which cuts to and from three different scenes to convey simultaneous action in both levels of the dream.
 
 Here is the best picture I found online of cross-cutting.
 
@@ -16,28 +16,33 @@ Consider the way a dealer shuffles cards like in the below GIF. Two separate dec
 
 There is a more obvious correspondence here between decks of cards and miniKanern lists.
 
-# The riffle relation
+Let me try to discretize _Inception_ as a gut test to see if the two analogies are in some sense identical. Ok, so what if we're no longer talking about the movie Inception, but instead, the script. And suppose you printed out the script so that scene changes (in our case, Inception's jumps between dreams). And suppose that the scripts had line breaks between scenes so that a "jump" between levels of the dream makes the script jump to the next page. And if you're out shooting a scene, let's say the second level of the dream, which has that incredible hallway fight, then you only need to bring pages from the script that correspond to that scene. And when you come back from shooting you have to _riffle_ those scene's pages back into the script. Like a deck of cards.
 
-Consider the relationship between a list `a`, a list `b` and the riffled output `o`. We will write the miniKanren code as if it is checking to make sure the riffled output is correct. First, the easy case:
+So let's model this relationship discretely. In miniKanren, this would be a relationship between
+1. a list `a`
+2. a list `b`
+3. and their riffled output `o`.
 
-* If one of `a` or `b` is empty then the riffle output is is equal to the other list.
+We will write the miniKanren code as if it is checking to make sure the riffled output is correct and follows logically from the inputs. First, let's check the easy case:
+
+> If one of `a` or `b` is empty then the riffle output is is equal to the other list.
 
 In miniKanren, this would be:
 
 ```scheme
 (defrel (riffleo a b o)
     (conde
-        ;; When one of `a` or `b` is empty
+        ;; If one of `a` or `b` is empty then the riffle output is is equal to the other list.
         ((== a '()) (== b o))
         ((== b '()) (== a o))))
 
-        ;; TODO: When both `a` and `b` are nonempty
+        ;; TODO: When both `a` and `b` are non-empty
 ```
 
 These cases are overlapping when both `a` and `b` are empty. It is good practice to "expand out" the overlapping cases. So the base cases become:
-* If `a` and `b` are both empty, then the output is empty.
-* If `a` is empty and `b` is nonempty, then the output is equal to `b`.
-* If `a` is nonempty and `b` is empty, then the output is equal to `a`.
+> If `a` and `b` are both empty, then the output is empty.
+> If `a` is empty and `b` is non-empty, then the output is equal to `b`.
+> If `a` is non-empty and `b` is empty, then the output is equal to `a`.
 
 We need fresh variables now to capture the potential non-emptiness of `a` and `b`. I will use a `car-*` and `cdr-*` convention.
 
@@ -45,20 +50,24 @@ We need fresh variables now to capture the potential non-emptiness of `a` and `b
 (defrel (riffleo a b o)
     (fresh (car-a cdr-a car-b cdr-b)
         (conde
-            ;; When one of `a` or `b` is empty
+            ;; If `a` and `b` are both empty, then the output is empty.
             ((== a '()) (== b '()) (== o '()))
+            
+            ;; If `a` is non-empty and `b` is empty, then the output is equal to `a`.
             ((== a `(,car-a . ,cdr-a)) (== b '()) (== o a))
+            
+            ;; If `a` is empty and `b` is non-empty, then the output is equal to `b`.
             ((== a '()) (== b `(,car-b . ,cdr-b)) (== o b)))))
 
-            ;; TODO: When both `a` and `b` are nonempty
+            ;; TODO: When both `a` and `b` are non-empty
 ```
 
-The more difficult case is when both `a` and `b` are nonempty. Let's look at "verifying" a riffle shuffle, per the above GIF: either a left card falls into the output deck, or the right card does. So we have two nonempty cases:
+The more difficult case is when both `a` and `b` are non-empty. Let's look at "verifying" a riffle shuffle, per the above GIF: either a left card falls into the output deck, or the right card does. So we have two non-empty cases:
 
-* Either `car-a` gets shuffled in, (that is, `car-a` equals `car-o`). And so the rest of the output (`cdr-o`). is the result of riffling `cdr-a` with `b`.
-* Or `car-b` gets shuffled in, in which case the rest of the output is the result of riffling `a` with the `cdr-b`.
+> Either `car-a` gets shuffled in, (that is, `car-a` equals `car-o`). And so the rest of the output (`cdr-o`). is the result of riffling `cdr-a` with `b`.
+> Or `car-b` gets shuffled in, in which case the rest of the output is the result of riffling `a` with the `cdr-b`.
 
-We also have implicitly stated that `o` is nonempty since it is made up of `car-o` and `cdr-o`. Which makes sense since riffling two nonempty decks should not result in an empty output. So this is true in both cases.
+We also have implicitly stated that `o` is non-empty since it is made up of `car-o` and `cdr-o`. Which makes sense since riffling two non-empty decks should not result in an empty output. So this is true in both cases and therefore can be lifted outside of the `conde`. (As a general rule of thumb, lift common unification `(== ... ...)` clauses upwards, and push everything else out downwards.)
 
 In code:
 
@@ -66,12 +75,16 @@ In code:
 (defrel (riffleo a b o)
     (fresh (car-a cdr-a car-b cdr-b car-o cdr-o)
         (conde
-            ;; When one of `a` or `b` is empty
+            ;; If `a` and `b` are both empty, then the output is empty.
             ((== a '()) (== b '()) (== o '()))
+            
+            ;; If `a` is non-empty and `b` is empty, then the output is equal to `a`.
             ((== a `(,car-a . ,cdr-a)) (== b '()) (== o a))
+            
+            ;; If `a` is empty and `b` is non-empty, then the output is equal to `b`.
             ((== a '()) (== b `(,car-b . ,cdr-b)) (== o b))
             
-            ;; When both `a` and `b` are nonempty
+            ;; When both `a` and `b` are non-empty
             ((== a `(,car-a . ,cdr-a)) (== b `(,car-b . ,cdr-b)) (== o `(,car-o . ,cdr-o))
                 (conde
                     ((== car-o car-a) (riffleo cdr-a b cdr-o))
@@ -82,18 +95,22 @@ This completes the riffle relation.
 
 # Optimizing `riffleo`
 
-Notice that our previous definition of `riffleo` leaves recursive calls within two different `conde` clauses. We can use a mechanical correctness-preserving transformation to introduce three placeholder arguments in an unconditional call to unify against conditionally. A miniKanren compiler (in the works!) would be able to do this step automatically. This transformation yields:
+Notice that our previous definition of `riffleo` leaves recursive calls within two different `conde` clauses. We can use a mechanical correctness-preserving transformation to introduce three placeholder arguments in an unconditional call to unify against conditionally. A miniKanren compiler would be able to do this step automatically. This transformation yields:
 
 ```scheme
 (defrel (riffleo a b o)
     (fresh (car-a cdr-a car-b cdr-b car-o cdr-o z0 z1 z2)
         (conde
-            ;; When one of `a` or `b` is empty
+            ;; If `a` and `b` are both empty, then the output is empty.
             ((== a '()) (== b '()) (== o '()))
+            
+            ;; If `a` is non-empty and `b` is empty, then the output is equal to `a`.
             ((== a `(,car-a . ,cdr-a)) (== b '()) (== o a))
+            
+            ;; If `a` is empty and `b` is non-empty, then the output is equal to `b`.
             ((== a '()) (== b `(,car-b . ,cdr-b)) (== o b))
             
-            ;; When both `a` and `b` are nonempty
+            ;; When both `a` and `b` are non-empty
             ((== a `(,car-a . ,cdr-a)) (== b `(,car-b . ,cdr-b)) (== o `(,car-o . ,cdr-o))
                 (conde
                     ((== car-o car-a) (== z0 cdr-a) (== z1 b) (== z2 cdr-o))
@@ -108,12 +125,16 @@ We can extract out the common `(== z2 cdr-o)` from both clauses of the inner `co
 (defrel (riffleo a b o)
     (fresh (car-a cdr-a car-b cdr-b car-o cdr-o z0 z1 z2)
         (conde
-            ;; When one of `a` or `b` is empty
+            ;; If `a` and `b` are both empty, then the output is empty.
             ((== a '()) (== b '()) (== o '()))
+            
+            ;; If `a` is non-empty and `b` is empty, then the output is equal to `a`.
             ((== a `(,car-a . ,cdr-a)) (== b '()) (== o a))
+            
+            ;; If `a` is empty and `b` is non-empty, then the output is equal to `b`.
             ((== a '()) (== b `(,car-b . ,cdr-b)) (== o b))
             
-            ;; When both `a` and `b` are nonempty
+            ;; When both `a` and `b` are non-empty
             ((== a `(,car-a . ,cdr-a)) (== b `(,car-b . ,cdr-b)) (== o `(,car-o . ,cdr-o)) (== z2 cdr-o)
                 (conde
                     ((== car-o car-a) (== z0 cdr-a) (== z1 b))
@@ -128,12 +149,16 @@ We can eagerly unify `z2` and `cdr-o` in order to remove all uses of `z2` in the
 (defrel (riffleo a b o)
     (fresh (car-a cdr-a car-b cdr-b car-o cdr-o z0 z1)
         (conde
-            ;; When one of `a` or `b` is empty
+            ;; If `a` and `b` are both empty, then the output is empty.
             ((== a '()) (== b '()) (== o '()))
+            
+            ;; If `a` is non-empty and `b` is empty, then the output is equal to `a`.
             ((== a `(,car-a . ,cdr-a)) (== b '()) (== o a))
+            
+            ;; If `a` is empty and `b` is non-empty, then the output is equal to `b`.
             ((== a '()) (== b `(,car-b . ,cdr-b)) (== o b))
             
-            ;; When both `a` and `b` are nonempty
+            ;; When both `a` and `b` are non-empty
             ((== a `(,car-a . ,cdr-a)) (== b `(,car-b . ,cdr-b)) (== o `(,car-o . ,cdr-o))
                 (conde
                     ((== car-o car-a) (== z0 cdr-a) (== z1 b))
@@ -297,12 +322,16 @@ The final Scheme code from this article, in full:
 (defrel (riffleo a b o)
     (fresh (car-a cdr-a car-b cdr-b car-o cdr-o z0 z1)
         (conde
-            ;; When one of `a` or `b` is empty
+            ;; If `a` and `b` are both empty, then the output is empty.
             ((== a '()) (== b '()) (== o '()))
+            
+            ;; If `a` is non-empty and `b` is empty, then the output is equal to `a`.
             ((== a `(,car-a . ,cdr-a)) (== b '()) (== o a))
+            
+            ;; If `a` is empty and `b` is non-empty, then the output is equal to `b`.
             ((== a '()) (== b `(,car-b . ,cdr-b)) (== o b))
             
-            ;; When both `a` and `b` are nonempty
+            ;; When both `a` and `b` are non-empty
             ((== a `(,car-a . ,cdr-a)) (== b `(,car-b . ,cdr-b)) (== o `(,car-o . ,cdr-o))
                 (conde
                     ((== car-o car-a) (== z0 cdr-a) (== z1 b))
