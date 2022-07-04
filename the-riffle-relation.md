@@ -306,6 +306,12 @@ It produces a solution, but for readability's sake we can apply `deep-unbuild-nu
 
 This matches our expectation per the aforementioned Wikipedia example that there is a three-partitioning of the given list of integers, whose partitions each sum to 90.
 
+# Further thoughts about relations
+
+How could we model this mixing GIF relationally?
+
+![](https://en.wikipedia.org/wiki/Mixing_%28mathematics%29#/media/File:Baker's_map_mixing.gif)
+
 # Acknowledgements
 
 This implementation of miniKanren (`trs2-impl.scm` and `trs2-arith.scm`) was provided from [Github](https://github.com/TheReasonedSchemer2ndEd/CodeFromTheReasonedSchemer2ndEd) by Daniel P. Friedman, William E. Byrd, Oleg Kiselyov, and Jason Hemann.
