@@ -15,6 +15,7 @@ Note that $\neg a \lor \neg b$ in the above formula can be expressed equivalentl
  
 ---
 Here is another argument that uses the same rule of inference:
+
 Premises:
 - $x_1 \lor x_2 \lor x_3 \lor p$
 - $y_1 \lor y_2 \lor y_3 \lor q$
@@ -26,6 +27,7 @@ Conclusion:
 - $p \lor q$
 ---
 The general formula of this rule of inference is:
+
 Premises:
 - $(\bigvee_{x}^{X} x) \lor p$
 - $(\bigvee_{y}^{Y} y) \lor q$
@@ -33,3 +35,7 @@ Premises:
 
 Conclusion:
 - $p \lor q$
+
+
+Rendered in LaTeX:
+![As a picture](rule-of-inference-picture.png?raw=true "Rule of inference as a picture")
