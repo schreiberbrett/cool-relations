@@ -28,7 +28,7 @@ Conclusion:
 The general formula of this rule of inference is:
 Premises:
 - $(\bigvee_{x}^{X} x) \lor p$
-- $(\bigvee_{y}^{Y} z) \lor q$
+- $(\bigvee_{y}^{Y} y) \lor q$
 - $\bigwedge_{x}^{X} \bigwedge_{y}^{Y} (\neg x \lor \neg y)$
 
 Conclusion:
