@@ -38,4 +38,5 @@ Conclusion:
 
 
 Rendered in LaTeX:
+
 ![As a picture](rule-of-inference-picture.png?raw=true "Rule of inference as a picture")
