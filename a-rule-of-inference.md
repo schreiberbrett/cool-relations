@@ -11,7 +11,7 @@ Premises:
 Conclusion:
 - $p \lor q$
 
-Note that $\neg a \lor \neg b$ in the above formula can be expressed equivalently (via [DeMorgan's law](https://en.wikipedia.org/wiki/De_Morgan%27s_laws)) as $\neg (a \land b)$, or even more compactly as $a ⊼ b$, where $⊼$ represents the logical NAND symbol.
+Note that $\neg x \lor \neg y$ in the above formula can be expressed equivalently (via [DeMorgan's law](https://en.wikipedia.org/wiki/De_Morgan%27s_laws)) as $\neg (x \land y)$, or even more compactly as $x ⊼ y$, where $⊼$ represents the logical NAND symbol.
  
 ---
 Here is another argument that uses the same rule of inference:
