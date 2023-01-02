@@ -1,22 +1,9 @@
-Brett Schreiber, 3 July 2022
-
-I like to watch movies. One thing I've started to notice is an editing style known as [cross-cutting](https://en.wikipedia.org/Cross-cutting). This is where two scenes are edited to be shown to the audience at the same time. My favorite example is from Christopher Nolan's _Inception_, which cuts to and from three different scenes to convey simultaneous action in both levels of the dream.
-
-Here is the best picture I found online of cross-cutting.
-
-![](https://www.filmeditingpro.com/wp-content/uploads/2018/09/Crosscutting_01b.jpg)
-
-This made me think that there's a relationship between two source scenes and the final cross-cut output. But film scenes are continuous, they exist on a timeline. So I need to think of a new analogy that works better with miniKanren's discrete lists and symbols.
-
-# A better analogy
+Brett Schreiber, 24 October 2022
 
 Consider the way a dealer shuffles cards like in the below GIF. Two separate decks get combined into one larger deck.
 
 ![](https://www.geogebra.org/resource/wbf3as26/nNXngeMdvMRfGZiL/material-wbf3as26.png)
 
-There is a more obvious correspondence here between decks of cards and miniKanern lists.
-
-Let me try to discretize _Inception_ as a gut test to see if the two analogies are in some sense identical. Ok, so what if we're no longer talking about the movie Inception, but instead, the script. And suppose you printed out the script so that scene changes caused a line break. Then in Inception, jumps between levels of the dream \ would always correspond to a "jump" to a new page in the script. So if you're out shooting a scene (let's say, you're filming the second level of the dream, which has that incredible hallway fight) then you only need to bring pages from the script that correspond to that scene. And when you come back from shooting you have to _riffle_ that scene's pages back into the rest of the script. Like two decks of cards.
 
 So let's model this relationship discretely. In miniKanren, this would be a relationship between
 1. a list `a`

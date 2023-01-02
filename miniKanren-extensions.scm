@@ -1221,3 +1221,50 @@
             (unbuild-num l))
         (else
             (map deep-unbuild-num l))))
+
+
+(defrel (riffleo l r o)
+  (fresh (car-l cdr-l car-r cdr-r car-o cdr-o)
+    (conde
+      ;; Base cases
+      ((== l '()) (== r '()) (== o '()))
+      ((== l `(,car-l . ,cdr-l)) (== r '()) (== o l))
+      ((== l '()) (== r `(,car-r . ,cdr-r)) (== o r))
+
+      ;; Recursive cases
+      ((== l `(,car-l . ,cdr-l)) (== r `(,car-r . ,cdr-r)) (== o `(,car-l . ,cdr-o))
+      	(riffleo cdr-l r cdr-o))
+      ((== l `(,car-l . ,cdr-l)) (== r `(,car-r . ,cdr-r)) (== o `(,car-r . ,cdr-o))
+      	(riffleo l cdr-r cdr-o)))))
+
+
+After applying a correctness-preserving transformation
+
+
+      	
+
+
+(defrel (riffleo l r o)
+    (fresh (car-l cdr-l l3 car-r cdr-r r3 car-o cdr-o)
+        (conde
+            ((== `(,l ,r ,o) `(               ()                ()                ())))
+            ((== `(,l ,r ,o) `((,car-l . ,cdr-l)                () (,car-l . ,cdr-l))))
+            ((== `(,l ,r ,o) `(               () (,car-r . ,cdr-r) (,car-r . ,cdr-r))))
+            ((== `(,l ,r ,o) `((,car-l . ,cdr-l) (,car-r . ,cdr-r) (,car-o . ,cdr-o)))
+                (conde
+                    ((== `(,car-o ,l3 ,r3) `(,car-l ,l2 ,r)))
+                    ((== `(,car-o ,l3 ,r3) `(,car-r ,l ,cdr-r))))
+                (riffleo l3 r3 cdr-o)))))
+
+
+
+(defrel (xo xs ys zs)
+  (conde
+    ((== zs '()))
+    ((fresh (first-xs rest-xs some-z rest-zs)
+      (== xs `(,first-xs . ,rest-xs))
+      (riffleo `(some-z) rest-zs zs)
+      (riffleo `(,x) ys zs)
+
+      (xo 
+    
