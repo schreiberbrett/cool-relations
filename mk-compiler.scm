@@ -591,3 +591,4 @@
                 (body-list (list 'body ...)))
 
             (eval (optimize-condes `(defrel (name args ...) . (body ...))))))))
+
