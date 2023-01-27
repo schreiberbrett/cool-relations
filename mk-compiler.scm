@@ -12,7 +12,7 @@
 ;; --- unify in-place where possible
 
 
-(load "pmatch.scm")
+(load "~/pmatch.scm")
 
 
 ;; Adapted from https://www.scheme.com/tsp13/io.html
@@ -592,3 +592,76 @@
 
             (eval (optimize-condes `(defrel (name args ...) . (body ...))))))))
 
+
+
+(define (lookup key dict)
+    (pmatch dict
+        (() '(nothing))
+        (((,key^ . ,value) . ,rest)
+            (if (equal? key key^)
+                `(just ,value)
+                (lookup key rest)))))
+
+
+(define (expand exp reldefs)
+    (pmatch exp
+        ((fresh ,vars . ,exps)
+            `(fresh ,vars . ,(map (lambda (x) (expand x reldefs)) exps)))
+
+        ((conde . ,exps*)
+            `(conde . 
+                ,(map (lambda (exps) (map (lambda (x) (expand x reldefs)) exps)) exps*)))
+
+        ((== . ,args)
+            `(== . ,args))
+
+        ((,rel . ,args) (pmatch (lookup rel reldefs)
+            ((nothing) `(,rel . ,args))
+
+            ((just (defrel (,r . ,params) . ,body))
+                `(fresh ,params
+                    (== (list . ,params) (list . ,args)) .
+                    ,body))))))
+
+
+
+(define reldefs `(
+    (patho .
+        (defrel (patho s t env)
+            (conde
+                ((edgeo s t env))
+                ((fresh (m)
+                    (edgeo s m env)
+                    (patho m t env))))))
+
+    (fibo .
+        (defrel (fibo n o)
+            (conde
+                ((== n '()) (== o '(s)))
+                ((== n '(s)) (== o '(s)))
+                ((fresh (n-1 n-2 o-1 o-2)
+                    (== `(s . ,n-1) n)
+                    (== `(s s . ,n-2) n)
+                    (appendo o-1 o-2 o)
+                    (fibo n-1 o-1)
+                    (fibo n-2 o-2))))))
+
+
+    (oddo .
+        (defrel (oddo n)
+            (fresh (n-1)
+                (== n `(s . ,n-1))
+                (eveno n-1))))
+
+    (eveno .
+        (defrel (eveno n)
+            (conde
+                ((== n '()))
+                ((fresh (n-1)
+                    (== n `(s . ,n-1))
+                    (oddo n-1))))))))
+
+(define (expand-n n reldefs exp)
+    (if (equal? n 1)
+        (expand exp reldefs)
+        (expand (expand-n (- n 1) reldefs exp) reldefs)))

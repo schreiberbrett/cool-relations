@@ -419,3 +419,163 @@
             (== m `(S . ,m^))
             (pluso n k^ k)
             (multo n m^ k^)))))
+
+
+(defrel (poopo dnf)
+    (conde
+        ((fresh (rest)
+            (riffleo '(()) rest dnf)))
+
+        ((fresh (x p^ q^ p q p-1 q-1 p-1q-1 rest)
+            (riffleo `((not ,x)) q-1 q)
+            (riffleo `(,p^ ,q^) rest dnf)
+            (riffleo `(,p) `(,q) `(,p^ ,q^))
+            (riffleo `(,x) p-1 p)
+            ;;(appendo p-1 q-1 p-1q-1)
+            ;;(poopo `(,p-1q-1 . ,rest))
+            
+            
+            ))))
+
+
+(defrel (eveno n)
+  (conde
+    ((== n '()))
+    ((fresh (n-1)
+       (== n `(s . ,n-1))
+       (fresh (n)
+         (== (list n) (list n-1))
+         (fresh (n-1)
+           (== n `(s . ,n-1))
+           (fresh (n)
+             (== (list n) (list n-1))
+             (conde
+               ((== n '()))
+               ((fresh (n-1)
+                  (== n `(s . ,n-1))
+                  (fresh (n)
+                    (== (list n) (list n-1))
+                    (fresh (n-1)
+                        (== n `(s . ,n-1))
+                        (eveno n-1)))))))))))))
+
+(defrel (fibo n o)
+    (conde
+        ((== n '()) (== o '(s)))
+        ((== n '(s)) (== o '(s)))
+        ((fresh (n-1 n-2 o-1 o-2)
+            (== `(s . ,n-1) n)
+            (== `(s s . ,n-2) n)
+            (appendo o-1 o-2 o)
+            (fibo n-1 o-1)
+            (fibo n-2 o-2)))))
+
+
+(defrel (accepto regex str)
+    (fresh (e1 e2 s1 s2 z)
+        (conde
+            ((== regex 0) (== str '(0)))
+            ((== regex 1) (== str '(1)))
+            ((== regex `(& ,e1 ,e2))
+                (appendo s1 s2 str)
+                (accepto e1 s1)
+                (accepto e2 s2))
+            ((== regex `(+ ,e1 ,e2))
+                (conde
+                    ((== z e1))
+                    ((== z e2)))
+                (accepto z str))
+
+            ((== regex `(* ,e1))
+                (conde
+                    ((== str '()))
+                    ((accepto `(& ,e1 (* ,e1)) str)))))))
+
+(defrel (naive-accepto regex str)
+    (fresh (e1 e2 s1 s2 z)
+        (conde
+            ((== regex 0) (== str '(0)))
+            ((== regex 1) (== str '(1)))
+            ((== regex `(& ,e1 ,e2))
+                (appendo s1 s2 str)
+                (naive-accepto e1 s1)
+                (naive-accepto e2 s2))
+            
+            ((== regex `(+ ,e1 ,e2)) (naive-accepto e1 str))
+            ((== regex `(+ ,e1 ,e2)) (naive-accepto e2 str))
+
+            ((== regex `(* ,e1)) (== str '()))
+
+            ((== regex `(* ,e1)) (accepto `(& ,e1 (* ,e1)) str)))))
+
+
+(define movies '(
+    (troy brad-pitt sean-bean orlando-blooom)
+    (moneyball brad-pitt jonah-hill)
+    (wolf-of-wall-street jonah-hill leonardo-dicaprio)
+    (whats-eating-gilbert-grape leonardo-dicaprio johnny-depp)))
+
+
+(define tmovies '(
+    (A x y)
+    (B y z)))
+
+(defrel (pick1o x not-picked l)
+    (riffleo `(,x) not-picked l))
+
+(defrel (picko picked not-picked l)
+    (conde
+        ((== picked '()) (== not-picked l))
+        ((fresh (first not-first rest)
+            (== picked `(,first . ,rest))
+            (pick1o first not-first l)
+            (picko rest not-picked not-first)))))
+
+(defrel (bacono movies x y proof)
+    (fresh (movie actors rest-movies ^1)
+        (picko `((,movie . ,actors)) rest-movies movies)
+        (conde
+            (
+                (== proof `((,movie ,x ,y)))
+                (picko `(,x ,y) ^1 actors))
+        
+            ((fresh (next rest-proof)
+                (== proof `((,movie ,x ,next) . ,rest-proof))
+                (picko `(,x ,next) ^1 actors)
+                (bacono rest-movies next y rest-proof))))))
+
+
+(defrel (three-dimensional-matchingo triples matching xs ys zs)
+    (fresh (unmatched)
+        (riffleo matching unmatched triples)
+        (containso matching xs ys zs)))
+
+(defrel (containso triples xs ys zs)
+    (conde
+        ((== triples '()))
+
+        ((fresh (x y z rest-triples rest-xs rest-ys rest-zs)
+            (== triples `((,x ,y ,z) . ,rest-triples))
+            (picko `(,x) rest-xs xs)
+            (picko `(,y) rest-ys ys)
+            (picko `(,z) rest-zs zs)
+            (containso rest-triples rest-xs rest-ys rest-zs)))))
+
+(defrel (exact-three-dimensional-matchingo triples matching xs ys zs)
+    (fresh (unmatched)
+        (riffleo matching unmatched triples)
+        (coverso matching xs ys zs)))
+
+(defrel (coverso triples xs ys zs)
+    (conde
+        ((== triples '()) (== xs '()) (== ys '()) (== zs '()))
+
+        ((fresh (x y z rest-triples rest-xs rest-ys rest-zs)
+            (== triples `((,x ,y ,z) . ,rest-triples))
+            (picko `(,x) rest-xs xs)
+            (picko `(,y) rest-ys ys)
+            (picko `(,z) rest-zs zs)
+            (coverso rest-triples rest-xs rest-ys rest-zs)))))
+
+
+
