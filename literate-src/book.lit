@@ -17,6 +17,6 @@ Here is what each example does:
 This small section right here is compiled to markdown and is meant for the author to be
 able to give some explanation at the start of the book (if needed).
 
-[PythonAndTypescript](./python-and-typescript.lit)
-[PythonAndC](./python-and-c.lit)
-[Associative Cartesian Product](./associative-cartesian-product.lit)
+[PythonAndTypescript](python-and-typescript.lit)
+[PythonAndC](python-and-c.lit)
+[Associative Cartesian Product](associative-cartesian-product.lit)

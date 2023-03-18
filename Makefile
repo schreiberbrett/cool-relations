@@ -1,13 +1,12 @@
 all: scribble-htmls literate-htmls 
 
 scribble-htmls:
-	scribble --dest-name scribble-htmls --htmls src/docs.scrbl
-
+	scribble --dest-name scribble-htmls --htmls scribble-src/main.scrbl
 
 literate-htmls:
-	lit --weave literate-src/book.lit
-	# lit does not have a --dest-name flag. It can be emulated with mv
-	mv _book literate-htmls
+	cd literate-src && \
+	lit --weave book.lit && \
+	mv _book ../literate-htmls
 
 clean:
 	rm -rf scribble-htmls literate-htmls
