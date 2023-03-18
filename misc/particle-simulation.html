@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Gravity simulation</title>
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+      canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <script>
+      // Set up canvas
+      const canvas = document.getElementById('canvas');
+      const context = canvas.getContext('2d');
+
+      // Set canvas size to fit browser window
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      // Set up masses
+      const num_masses = 50;
+      const masses = [];
+      const radius = 10;
+      for (let i = 0; i < num_masses; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        masses.push({ x: x, y: y, vx: 0, vy: 0, mass: radius ** 2 });
+      }
+
+      // Set up torus
+      const torus_width = canvas.width;
+      const torus_height = canvas.height;
+
+      // Update positions and velocities
+      function update() {
+        for (let i = 0; i < masses.length; i++) {
+          const m1 = masses[i];
+          m1.x = (m1.x + m1.vx + torus_width) % torus_width;
+          m1.y = (m1.y + m1.vy + torus_height) % torus_height;
+
+          for (let j = i + 1; j < masses.length; j++) {
+            const m2 = masses[j];
+            const dx = m2.x - m1.x;
+            const dy = m2.y - m1.y;
+            const distance = Math.sqrt(dx ** 2 + dy ** 2);
+            const min_distance = Math.sqrt(m1.mass + m2.mass);
+
+            if (distance < min_distance) {
+                const angle = Math.atan2(dy, dx);
+                const theta = angle - Math.PI / 2;
+                const v1x = m1.vx * Math.cos(angle) + m1.vy * Math.sin(angle);
+                const v1y = -m1.vx * Math.sin(angle) + m1.vy * Math.cos(angle);
+                const v2x = m2.vx * Math.cos(angle) + m2.vy * Math.sin(angle);
+                const v2y = -m2.vx * Math.sin(angle) + m2.vy * Math.cos(angle);
+                const final_vx1 = ((m1.mass - m2.mass) * v1x + 2 * m2.mass * v2x) / (m1.mass + m2.mass);
+                const final_vx2 = ((m2.mass - m1.mass) * v2x + 2 * m1.mass * v1x) / (m1.mass + m2.mass);
+                m1.vx = Math.cos(theta) * final_vx1 - Math.sin(theta) * v1y;
+                m1.vy = Math.sin(theta) * final_vx1 + Math.cos(theta) * v1y;
+                m2.vx = Math.cos(theta) * final_vx2 - Math.sin(theta) * v2y;
+                m2.vy = Math.sin(theta) * final_vx2 + Math.cos(theta) * v2y;
+            } else {
+                const force = (m1.mass * m2.mass) / distance ** 2;
+                const angle = Math.atan2(dy, dx);
+                const fx = force * Math.cos(angle);
+                const fy = force * Math.sin(angle);
+                m1.vx += fx / m1.mass;
+                m1.vy += fy / m1.mass;
+                m2.vx -= fx / m2.mass;
+                m2.vy -= fy / m2.mass;
+            }
+        }
+    }
+}
+  // Draw masses
+  function draw() {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < masses.length; i++) {
+      const m = masses[i];
+      context.beginPath();
+      context.arc(m.x, m.y, radius, 0, 2 * Math.PI);
+      context.fillStyle = 'black';
+      context.fill();
+    }
+  }
+
+  // Run simulation
+  function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+  }
+  loop();
+</script>
+</body>
+</html>
