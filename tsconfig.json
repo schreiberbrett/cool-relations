@@ -1,7 +1,0 @@
-{
-    "compilerOptions": {
-        "strictNullChecks": true,
-        "lib": ["ES2017", "DOM"],
-        "downlevelIteration": true
-    }
-}
