@@ -299,13 +299,12 @@ The actor association game, known also as "The Six Degrees of Kevin Bacon" is a 
  > (run 1 (x) (a-sample-databaseo `(job ,x (computer programmer))))
  '(((Hacker Alyssa P)))]
 
-
 @section{Khmer Zodiac Animals}
-In Khmer, there is a distinction between the names of the animals in everyday life and the names of the zodiac years. Similar to how English makes a distinction between "pig" and "pork". We can represent the relationship between the everyday Khmer animal words and the zodiac years as as a finite table of 12 rows.
+Similar to how English speakers say "pork" instead of "pig" when discussing food, Khmer speakers uses different words for animals in the zodiac years. A 12-row table describes the relationship completely.
 
 @chunk[<khmer-zodiaco>
-       (defrel (khmer-zodiaco english animal zodiac)
-         (ino `(,english ,animal ,zodiac)
+       (defrel (khmer-zodiaco english typical-word zodiac-word)
+         (ino `(,english ,typical-word ,zodiac-word)
               '((rat កណ្ដុរ ជូត)
                 (ox គោ ឆ្លូវ)
                 (tiger ខ្លា ខាល)
