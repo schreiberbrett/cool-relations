@@ -1,0 +1,207 @@
+@s Existential Disjunctive Normal Form
+
+A formula in first-order logic is in **existential disjunctive normal form** (hereafter, the formula is an *EDNF*) if it contains exactly one existential formula at the beginning, followed by a disjunction of conjunctions.
+
+Here is an example EDNF, assuming the predicates $P, Q, R, S$ are defined:
+
+<table>
+<tr>
+    <td>
+        $\exists_{x, y, z, w}$
+    </td>
+    <td>
+        $(P(x, y)$
+    </td>
+    <td>
+        $\land$
+    </td>
+    <td>
+        $Q(z, w))$
+    </td>
+</tr>
+<tr>
+    <td>
+        $\lor$
+    </td>
+    <td>
+        $(R(x, y , z)$
+    </td>
+    <td>
+        $\land$
+    </td>
+    <td>
+        $S(w))$
+    </td>
+</tr>
+<tr>
+    <td>
+        $\lor$
+    </td>
+    <td>
+        $(P(x, w)$
+    </td>
+    <td>
+        $\land$
+    </td>
+    <td>
+        $Q(x, y)$
+    </td>
+    <td>
+        $\land$
+    </td>
+    <td>
+        $S(x))$
+    </td>
+</tr>
+<tr>
+    <td>
+        $\lor$
+    </td>
+    <td>
+        $(S(y)$
+    </td>
+    <td>
+        $\land$
+    </td>
+    <td>
+        $S(w)$
+    </td>
+    <td>
+        $\land$
+    </td>
+    <td>
+        $P(x, x))$
+    </td>
+</tr>
+<tr>
+    <td>
+        $\lor$
+    </td>
+    <td>
+        $(R(x, y, z)$
+    </td>
+    <td>
+        $\land$
+    </td>
+    <td>
+        $R(x, y, w))$
+    </td>
+</tr>
+</table>
+
+Here is how that EDNF can be encoded in C
+
+--- EDNF Example C
+symbol x = gensym(), y = gensym(), z = gensym(), w = gensym();
+symbol P = gensym(), Q = gensym(), R = gensym(), S = gensym();
+
+struct EDNF my_ednf = (struct EDNF){
+    .existentials = (symbol[]){x, y, z, w},
+    .number_of_existentials = 4,
+
+    .conjunctions = (struct Conjunction[]) {
+        (struct Conjunction){
+            .predicates = (struct Predicate[]){
+                p(P, 2, (symbol[]){x, y}),
+                p(Q, 2, (symbol[]){z, w})
+            },
+            .number_of_predicates = 2,
+        }
+    },
+    .number_of_conjunctions = 5 
+}
+---
+
+--- EDNF Definition C
+struct EDNF {
+    symbol *existentials;
+    int number_of_existentials;
+
+    struct Conjunction *conjunctions;
+    int number_of_conjunctions;
+};
+---
+
+But what is a conjunction? Well, consider trying to encode a well-formed-formula like the following:
+
+$S(y) \land S(w) \land P(x, x)$
+
+Essentially, this is a sequence of predicates applied to arguments, separated by logical ANDs. The ANDs always go in-between each predicate and can therefore be left out when encoding. So we just need to keep  track of the sequence of predicates and their arguments (and in C, we also need to explicitly keep track of the number of items in the sequence, as always).
+
+
+--- Conjunction Definition C
+struct Conjunction {
+    struct Predicate *predicates;
+    int number_of_predicates;
+};
+---
+
+--- Predicate Definition C
+struct Predicate {
+    char *name;
+    struct SExpression *s_expressions;
+    int arity;
+};
+--- 
+
+Per [Wikipedia](https://en.wikipedia.org/wiki/S-expression):
+
+> an S-expression is classically defined as
+> - an atom of the form `x`, or
+> - an expression of the form `(x . y)` where `x` and `y` are S-expressions.
+
+--- S Expression Definition C
+enum SExpressionType {
+    ATOM,
+    CONS
+};
+
+struct Atom {}; // TODO
+
+struct SExpression {
+    enum SExpressionType type;
+    union {
+        struct Atom atom;
+        struct {
+            struct SExpression *car;
+            struct SExpression *cdr;
+        } cons;
+    };
+};
+---
+
+It would be nice to provide terse constructor functions to build up S-expressions, emulating Lisp as faithfully as possible. In fact, `cons` itself is short for "constructor", because it's used for constructing pairs.
+
+--- S Expression Constructors C
+struct SExpression *c(struct SExpression *car, struct SExpression *cdr) {
+    struct SExpression *result = malloc(sizeof (struct SExpression));
+
+    result->type = CONS;
+    result->cons.car = car;
+    result->cons.cdr = cdr;
+
+    return result;
+}
+---
+
+--- EDNF Constructors C
+struct Predicate p(symbol name, int arity, struct SExpression *args) {
+    return (struct Predicate){.name = name, .arity = arity, .args = args};
+}
+
+---
+
+@s Appendix
+--- ednf.c
+typedef int symbol;
+@{S Expression Definition C}
+@{S Expression Constructors C}
+@{Predicate Definition C}
+@{EDNF Definition C}
+@{EDNF Constructors C}
+@{EDNF Example C}
+
+void free_ENDF(struct EDNF ednf) {
+    return;
+}
+---

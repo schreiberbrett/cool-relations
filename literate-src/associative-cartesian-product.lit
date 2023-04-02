@@ -1,8 +1,25 @@
 @s The Associative Cartesian Product
 
+The n-ary cartesian product when and $k = 4$ is something like:
 
---- main.py
+--- Concrete product
+def concrete_product(l: List[List[T]]) -> List[List[T]]:
+    l1, l2, l3, l4 = l
+    result = []
+    for e1 in l1:
+        for e2 in l2:
+            for e3 in l3:
+                for e4 in l4:
+                    result.append([e1, e2, e3, e4])
+
+    return result
+---
+
+If all inner lists have size $n$, then the running time is $O(n^4)$ for the above. It should be possible to make an algorithm with runtime $O(n^k)$ when the input list is size $k$. In fact, that is the lower bound, since the associative cartesian product requires $O(n^k)$ space to write its output.
+
+--- associative-cartesian-product.py
 @{Python typing imports}
+@{Concrete product}
 ---
 
 Consider the associative cartesian product:
@@ -58,5 +75,7 @@ $$x = d_0 + b_1(d_1 + b_2(d_2 + b_3(d_3 + (\ldots b_n(d_n) \ldots ))))$$
 
 
 --- Python typing imports
+from typing import List, TypeVar
 
+T = TypeVar('T')
 ---

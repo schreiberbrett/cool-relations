@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Associative Cartesian Product</title>
+<title>Existential Disjunctive Normal Form</title>
 <script>
 !function(){var q=null;window.PR_SHOULD_USE_CONTINUATION=!0;
 (function(){function R(a){function d(e){var b=e.charCodeAt(0);if(b!==92)return b;var a=e.charAt(1);return(b=r[a])?b:"0"<=a&&a<="7"?parseInt(e.substring(1),8):a==="u"||a==="x"?parseInt(e.substring(2),16):e.charCodeAt(1)}function g(e){if(e<32)return(e<16?"\\x0":"\\x")+e.toString(16);e=String.fromCharCode(e);return e==="\\"||e==="-"||e==="]"||e==="^"?"\\"+e:e}function b(e){var b=e.substring(1,e.length-1).match(/\\u[\dA-Fa-f]{4}|\\x[\dA-Fa-f]{2}|\\[0-3][0-7]{0,2}|\\[0-7]{1,2}|\\[\S\s]|[^\\]/g),e=[],a=
@@ -42,101 +42,265 @@ body{min-width:200px;max-width:850px;margin:0 auto;padding:30px;}.chapter-nav{fo
 </head>
 <body onload="prettyPrint()">
 <section>
-<h1>Associative Cartesian Product</h1>
-<a name="3:1"><div class="section"><h4>1. The Associative Cartesian Product</h4></a>
-<p>The n-ary cartesian product when and <span class="math">k = 4</span> is something like:
+<h1>Existential Disjunctive Normal Form</h1>
+<a name="4:1"><div class="section"><h4>1. Existential Disjunctive Normal Form</h4></a>
+<p>A formula in first-order logic is in <strong>existential disjunctive normal form</strong> (hereafter, the formula is an <em>EDNF</em>) if it contains exactly one existential formula at the beginning, followed by a disjunction of conjunctions.
+</p>
+<p>Here is an example EDNF, assuming the predicates <span class="math">P, Q, R, S</span> are defined:
+</p>
+<table>
+<tr>
+    <td>
+        <span class="math">\exists_{x, y, z, w}</span>
+    </td>
+    <td>
+        <span class="math">(P(x, y)</span>
+    </td>
+    <td>
+        <span class="math">\land</span>
+    </td>
+    <td>
+        <span class="math">Q(z, w))</span>
+    </td>
+</tr>
+<tr>
+    <td>
+        <span class="math">\lor</span>
+    </td>
+    <td>
+        <span class="math">(R(x, y , z)</span>
+    </td>
+    <td>
+        <span class="math">\land</span>
+    </td>
+    <td>
+        <span class="math">S(w))</span>
+    </td>
+</tr>
+<tr>
+    <td>
+        <span class="math">\lor</span>
+    </td>
+    <td>
+        <span class="math">(P(x, w)</span>
+    </td>
+    <td>
+        <span class="math">\land</span>
+    </td>
+    <td>
+        <span class="math">Q(x, y)</span>
+    </td>
+    <td>
+        <span class="math">\land</span>
+    </td>
+    <td>
+        <span class="math">S(x))</span>
+    </td>
+</tr>
+<tr>
+    <td>
+        <span class="math">\lor</span>
+    </td>
+    <td>
+        <span class="math">(S(y)</span>
+    </td>
+    <td>
+        <span class="math">\land</span>
+    </td>
+    <td>
+        <span class="math">S(w)</span>
+    </td>
+    <td>
+        <span class="math">\land</span>
+    </td>
+    <td>
+        <span class="math">P(x, x))</span>
+    </td>
+</tr>
+<tr>
+    <td>
+        <span class="math">\lor</span>
+    </td>
+    <td>
+        <span class="math">(R(x, y, z)</span>
+    </td>
+    <td>
+        <span class="math">\land</span>
+    </td>
+    <td>
+        <span class="math">R(x, y, w))</span>
+    </td>
+</tr>
+</table>
+<p>Here is how that EDNF can be encoded in C
 </p>
 
 <div class="codeblock">
-<span class="codeblock_name">{Concrete product <a href="associative-cartesian-product.html#3:1">1</a>}</span>
+<span class="codeblock_name">{EDNF Example C <a href="ednf.html#4:1">1</a>}</span>
 <pre class="prettyprint">
-def concrete_product(l: List[List[T]]) -&gt; List[List[T]]:
-    l1, l2, l3, l4 = l
-    result = []
-    for e1 in l1:
-        for e2 in l2:
-            for e3 in l3:
-                for e4 in l4:
-                    result.append([e1, e2, e3, e4])
+symbol x = gensym(), y = gensym(), z = gensym(), w = gensym();
+symbol P = gensym(), Q = gensym(), R = gensym(), S = gensym();
 
-    return result
+struct EDNF my_ednf = (struct EDNF){
+    .existentials = (symbol[]){x, y, z, w},
+    .number_of_existentials = 4,
+
+    .conjunctions = (struct Conjunction[]) {
+        (struct Conjunction){
+            .predicates = (struct Predicate[]){
+                p(P, 2, (symbol[]){x, y}),
+                p(Q, 2, (symbol[]){z, w})
+            },
+            .number_of_predicates = 2,
+        }
+    },
+    .number_of_conjunctions = 5 
+}
+</pre>
+
+
+<p class="seealso">Used in section <a href="ednf.html#4:2">2</a></p>
+</div>
+
+<div class="codeblock">
+<span class="codeblock_name">{EDNF Definition C <a href="ednf.html#4:1">1</a>}</span>
+<pre class="prettyprint">
+struct EDNF {
+    symbol *existentials;
+    int number_of_existentials;
+
+    struct Conjunction *conjunctions;
+    int number_of_conjunctions;
+};
+</pre>
+
+
+<p class="seealso">Used in section <a href="ednf.html#4:2">2</a></p>
+</div>
+<p>But what is a conjunction? Well, consider trying to encode a well-formed-formula like the following:
+</p>
+<p><span class="math">S(y) \land S(w) \land P(x, x)</span>
+</p>
+<p>Essentially, this is a sequence of predicates applied to arguments, separated by logical ANDs. The ANDs always go in-between each predicate and can therefore be left out when encoding. So we just need to keep  track of the sequence of predicates and their arguments (and in C, we also need to explicitly keep track of the number of items in the sequence, as always).
+</p>
+
+<div class="codeblock">
+<span class="codeblock_name">{Conjunction Definition C <a href="ednf.html#4:1">1</a>}</span>
+<pre class="prettyprint">
+struct Conjunction {
+    struct Predicate *predicates;
+    int number_of_predicates;
+};
 </pre>
 
 
 
 </div>
-<p>If all inner lists have size <span class="math">n</span>, then the running time is <span class="math">O(n^4)</span> for the above. It should be possible to make an algorithm with runtime <span class="math">O(n^k)</span> when the input list is size <span class="math">k</span>. In fact, that is the lower bound, since the associative cartesian product requires <span class="math">O(n^k)</span> space to write its output.
+
+<div class="codeblock">
+<span class="codeblock_name">{Predicate Definition C <a href="ednf.html#4:1">1</a>}</span>
+<pre class="prettyprint">
+struct Predicate {
+    char *name;
+    struct SExpression *s_expressions;
+    int arity;
+};
+</pre>
+
+
+<p class="seealso">Used in section <a href="ednf.html#4:2">2</a></p>
+</div>
+<p>Per <a href="https://en.wikipedia.org/wiki/S-expression">Wikipedia</a>:
+</p>
+<blockquote><p> an S-expression is classically defined as
+</p>
+<ul>
+<li>an atom of the form <code>x</code>, or
+</li>
+<li>an expression of the form <code>(x . y)</code> where <code>x</code> and <code>y</code> are S-expressions.
+</li>
+</ul>
+</blockquote>
+
+<div class="codeblock">
+<span class="codeblock_name">{S Expression Definition C <a href="ednf.html#4:1">1</a>}</span>
+<pre class="prettyprint">
+enum SExpressionType {
+    ATOM,
+    CONS
+};
+
+struct Atom {}; // TODO
+
+struct SExpression {
+    enum SExpressionType type;
+    union {
+        struct Atom atom;
+        struct {
+            struct SExpression *car;
+            struct SExpression *cdr;
+        } cons;
+    };
+};
+</pre>
+
+
+<p class="seealso">Used in section <a href="ednf.html#4:2">2</a></p>
+</div>
+<p>It would be nice to provide terse constructor functions to build up S-expressions, emulating Lisp as faithfully as possible. In fact, <code>cons</code> itself is short for "constructor", because it's used for constructing pairs.
 </p>
 
 <div class="codeblock">
-<span class="codeblock_name">{<strong>associative-cartesian-product.py</strong> <a href="associative-cartesian-product.html#3:1">1</a>}</span>
+<span class="codeblock_name">{S Expression Constructors C <a href="ednf.html#4:1">1</a>}</span>
 <pre class="prettyprint">
-<span class="nocode pln">{Python typing imports, <a href="associative-cartesian-product.html#3:2">2</a>}</span>
-<span class="nocode pln">{Concrete product, <a href="associative-cartesian-product.html#3:1">1</a>}</span>
+struct SExpression *c(struct SExpression *car, struct SExpression *cdr) {
+    struct SExpression *result = malloc(sizeof (struct SExpression));
+
+    result-&gt;type = CONS;
+    result-&gt;cons.car = car;
+    result-&gt;cons.cdr = cdr;
+
+    return result;
+}
+</pre>
+
+
+<p class="seealso">Used in section <a href="ednf.html#4:2">2</a></p>
+</div>
+
+<div class="codeblock">
+<span class="codeblock_name">{EDNF Constructors C <a href="ednf.html#4:1">1</a>}</span>
+<pre class="prettyprint">
+struct Predicate p(symbol name, int arity, struct SExpression *args) {
+    return (struct Predicate){.name = name, .arity = arity, .args = args};
+}
+
+</pre>
+
+
+<p class="seealso">Used in section <a href="ednf.html#4:2">2</a></p>
+</div>
+</div>
+<a name="4:2"><div class="section"><h4>2. Appendix</h4></a>
+
+<div class="codeblock">
+<span class="codeblock_name">{<strong>ednf.c</strong> <a href="ednf.html#4:2">2</a>}</span>
+<pre class="prettyprint">
+typedef int symbol;
+<span class="nocode pln">{S Expression Definition C, <a href="ednf.html#4:1">1</a>}</span>
+<span class="nocode pln">{S Expression Constructors C, <a href="ednf.html#4:1">1</a>}</span>
+<span class="nocode pln">{Predicate Definition C, <a href="ednf.html#4:1">1</a>}</span>
+<span class="nocode pln">{EDNF Definition C, <a href="ednf.html#4:1">1</a>}</span>
+<span class="nocode pln">{EDNF Constructors C, <a href="ednf.html#4:1">1</a>}</span>
+<span class="nocode pln">{EDNF Example C, <a href="ednf.html#4:1">1</a>}</span>
+
+void free_ENDF(struct EDNF ednf) {
+    return;
+}
 </pre>
 
 
 
-</div>
-<p>Consider the associative cartesian product:
-</p>
-<div class="math">
-{0, 1, 2, 3, 4, 5, 6, 7, 8, 9} \times {0, 1, 2, 3, 4, 5, 6, 7, 8, 9} = {
-    {0, 0},
-    {0, 1},
-    {0, 2},
-    {0, 3},
-    {0, 4},
-    {0, 5} ...
-    {9, 8}, {9, 9}
-    }
-</div>
-<p>This set has a one-to-one correspondence to the numbers 0 - 99. In fact, it is their base 10 representation. In general:
-</p>
-<div class="math">
-\bigtimes^n {0, 1, 2, 3, 4, 5, 6, 7, 8, 9} = \text{A set isomorphic to} {0 ... 9^n}
-</div>
-<p>Moreover, this works for binary, as well as any base.
-</p>
-<div class="math">
-\bigtimes^n {0, 1} = \text{A set isomorphic to {0 ... 2^n}}
-</div>
-<p>This even works when the sets aren't uniform, where it is known as <em>mixed radix</em>. So I will shift focus and work on writing a function that calculates the mixed radix representation of the numbers 0 through <span class="math">\prod_{i = 1}^n b_i</span>, where <span class="math">b_i</span> is the base for the <span class="math">i</span>th index. (We need multiple <span class="math">b</span>s for each radix). These are always going to be whole numbers stopping at <span class="math">\prod_{i = 1}^n b_i</span>, so I don't have to worry about decimal points. I will call this variation <em>finite mixed radix</em>.
-</p>
-
-</div>
-<a name="3:2"><div class="section"><h4>2. Calculating the mixed radix representation of a number $x$</h4></a>
-<p>Consider the number <span class="math">392</span>. Its base 10 representation means:
-</p>
-<p><div class="math">392 = 3 <em> 100 + 9 </em> 10 + 2 <em> 1&lt;/div&gt;
-&lt;div class="math"&gt;392 = 3 </em> 10 <em> 10 + 9 </em> 10 + 2 <em> 1&lt;/div&gt;
-&lt;div class="math"&gt;392 = 2 </em> 1 + 9 <em> 1 </em> 10 + 3 <em> 1 </em> 10 * 10</div>
-</p>
-<p>We can consider "uniform" radix to be a special case of finite mixed radix. So, if <span class="math">x = 392</span>, then, assuming a limit of 9999:
-</p>
-<p><div class="math">x = 2 + 9b_1 + 3b_1 b_2 + 0b_1b_2_b3 + 0b_1b_2b_3b_4</div>
-</p>
-<p>where <span class="math">b_1 = b_2 = b_3 = b_4 = 10</span>.
-</p>
-<p>In general:
-</p>
-<p><div class="math">x = d_0 + d_1b_1 + d_2b_1b_2 + d_3b_1b_2b_3 + \ldots + d_nb_1b_2 \cdots b_n</div>
-</p>
-<p>Applying Horner's lemma:
-</p>
-<p><div class="math">x = d_0 + b_1(d_1 + b_2(d_2 + b_3(d_3 + (\ldots b_n(d_n) \ldots ))))</div>
-</p>
-
-<div class="codeblock">
-<span class="codeblock_name">{Python typing imports <a href="associative-cartesian-product.html#3:2">2</a>}</span>
-<pre class="prettyprint">
-from typing import List, TypeVar
-
-T = TypeVar('T')
-</pre>
-
-
-<p class="seealso">Used in section <a href="associative-cartesian-product.html#3:1">1</a></p>
 </div>
 
 </div>
@@ -170,4 +334,4 @@ for (var i = 0; i < mathDivs.length; i++) {
     }
 }
 </script>
-<br><a style="float:left;" class="chapter-nav" href="python-and-c.html">Previous Chapter</a><a style="float:right;" class="chapter-nav" href="ednf.html">Next Chapter</a></body>
+<br><a style="float:left;" class="chapter-nav" href="associative-cartesian-product.html">Previous Chapter</a></body>

@@ -3,6 +3,8 @@
 
 @title{Cool Relations}
 
+@(require scribble/manual)
+
 @section{Code from The Reasoned Schemer 2nd Edition}
 @chunk[<load>
        (require racket/match)
@@ -296,7 +298,29 @@ The actor association game, known also as "The Six Degrees of Kevin Bacon" is a 
 @racketblock[
  > (run 1 (x) (a-sample-databaseo `(job ,x (computer programmer))))
  '(((Hacker Alyssa P)))]
-                      
+
+
+@section{Khmer Zodiac Animals}
+In Khmer, there is a distinction between the names of the animals in everyday life and the names of the zodiac years. Similar to how English makes a distinction between "pig" and "pork". We can represent the relationship between the everyday Khmer animal words and the zodiac years as as a finite table of 12 rows.
+
+@chunk[<khmer-zodiaco>
+       (defrel (khmer-zodiaco english animal zodiac)
+         (ino `(,english ,animal ,zodiac)
+              '((rat កណ្ដុរ ជូត)
+                (ox គោ ឆ្លូវ)
+                (tiger ខ្លា ខាល)
+                (rabbit ទន្សាយ ថោះ)
+                (dragon នាគ រោង)
+                (snake ពស់ ម្សាញ់)
+                (horse សេះ មមី)
+                (goat ពពែ មមែ)
+                (monkey ស្វា វក)
+                (rooster មាន់ រកា)
+                (dog ឆ្កែ ច)
+                (pig ជ្រូក កុរ))))]
+                                            
+This table is crucial for Khmer learners, but I wish it had better vertical alignment.
+
 @section{A worked example: Decoding MIPS}
 There is a difference between the actual zeroes and ones that a MIPS CPU executes, and the assembly instructions that they represent. miniKanren can bridge this divide.
 
@@ -923,6 +947,7 @@ Putting it all together
        <nonempty-riffleo*>
        <smaller-relations>
        <a-sample-databaseo>
+       <khmer-zodiaco>
        <regularo>
        <anbno>
        <context-freeo>
