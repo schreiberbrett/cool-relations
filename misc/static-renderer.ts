@@ -46,10 +46,12 @@ function toHTML(x: InterlinearData): string {
             }
         
             .km {
-                font-size: xx-large;
+                font-size: 4rem;
+                text-align: center;;
             }
         
-            .en, .km {
+            .en {
+                font-size: 2rem;
                 text-align: center;
             }
         </style>
