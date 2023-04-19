@@ -1,0 +1,43 @@
+digraph G {
+    node [shape=rectangle];
+    starting_state [label="Starting state"];
+    convert_to_ednf [label="Convert the formula into an EDNF."];
+    try_unifying [label="Try unifying according to the bare branch."];
+    remove_bare_branch [label="Remove the bare branch from the EDNF."];
+    output_unified [label="Output the unified variabels. \n Decrement run."];
+    halt [label="Halt."];
+    references_definition [label="EDNF must reference a definition. \n Replace all definitons with their bodies."];
+    
+    node [shape=diamond];
+    run_equal_zero [label="Is run = 0?"];
+    did_unification_succeed [label="Did unification succeed?"];
+    is_ednf_empty [label="Is the EDNF empty?"];
+    contains_a_bare_branch [label="Does the EDNF contain a bare branch?"];
+    
+    
+
+    
+    starting_state -> convert_to_ednf;
+    
+    
+    try_unifying -> did_unification_succeed;
+    
+    did_unification_succeed -> output_unified [label="Yes"];
+    did_unification_succeed -> remove_bare_branch [label="No"];
+
+    output_unified -> remove_bare_branch -> run_equal_zero;
+    
+    contains_a_bare_branch -> try_unifying [label="Yes"];
+    
+    is_ednf_empty -> halt [label="Yes"];
+    is_ednf_empty -> contains_a_bare_branch [label="No"];
+    contains_a_bare_branch -> references_definition [label = "No"];
+    
+    references_definition -> convert_to_ednf;
+    convert_to_ednf -> run_equal_zero;
+    
+    run_equal_zero -> halt [label="Yes"];
+    run_equal_zero -> is_ednf_empty [label="No"];
+    
+    
+}
