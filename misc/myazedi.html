@@ -1,0 +1,129 @@
+<h1>Polyglot Programming</h1>
+
+The Myazedi Inscription is an ancient artifact where the same decree is written in four different languages. This document is an attempt to write the same code in multiple programming languages.
+
+<h2>What is an S-Expression?</h2>
+An S-Expression (here on referred to as a SExp) is either an atom, or a pair. All atoms will be represented as a symbol, and for most languages, a symbol is just a string.
+
+<pre class="Python">
+Symbol = str
+</pre>
+
+<pre class="C">
+typedef Symbol char *;
+</pre>
+
+<pre class="Typescript">
+type Symbol = string
+</pre>
+
+The pair case of SExp is more complicated, because it contains two SExps as children. S-Expressions come from Lisp, and in Lisp, this pair case is called a cons pair, where the left child is called car and the right child is called cdr.
+
+<pre class="Python">
+from typing import Tuple
+
+SExp = Symbol | Tuple['SExp', 'SExp']
+</pre>
+
+<pre class="Haskell">
+data SExp = Sym Symbol | Cons SExp SExp
+</pre>
+
+<pre class="C">
+// Tagged unions in C
+enum Tag {
+    SYMBOL,
+    CONS
+};
+
+struct SExp {
+    enum Tag kind;
+    symbol sym;
+    struct SExp *car;
+    struct SExp *cdr;
+};
+</pre>
+
+
+<h2>Does the symbol occur anywhere in the SExp?</h2>
+Given: a <code>Symbol</code> and a <code>SExp</code>, returns true if the SExp contains the same symbol (that is, a string with the same contents).
+
+
+<h3>Attempt 1</h3>
+
+<pre class="Python">
+def symbol_occurs_in_sexp(sym: Symbol, sexp: SExp) -> bool:
+    match sexp:
+        case (car, cdr):
+            return (
+                symbol_occurs_in_sexp(sym, car) or
+                symbol_occurs_in_sexp(sym, cdr)
+            )
+
+        case s:
+            return sym == s
+</pre>
+
+<pre class="C">
+bool symbol_occurs_in_sexp(Symbol sym, struct SExp sexp) {
+    switch (sexp.kind) {
+        case CONS:
+            return (
+                symbol_occurs_in_sexp(sym, *sexp.car) ||
+                symbol_occurs_in_sexp(sym, *sexp.cdr)
+            );
+
+        case SYMBOL:
+            return strcmp(sym, sexp.sym) == 0;
+    }
+}
+</pre>
+
+<pre class="Haskell">
+symbolOccursInSexp :: Symbol -> SExp -> Bool
+symbolOccursInSexp sym sexp = case sexp of
+    (Cons car cdr) ->  (
+        symbolOccursInSexp sym car ||
+        symbolOccursInSexp sym cdr
+    )
+
+    (Sym s) -> sym == s
+</pre>
+
+
+<h3>Attempt 2: Respecting Quotation</h3>
+
+TODO
+
+
+
+<h2>miniKanren, and the definition of a clause</h2>
+
+
+For my purposes, the definition of a miniKanren clause is best described in Haskell:
+
+
+<pre class="Haskell">
+data Clause
+    = Relation Symbol [SExp]
+    | Conde [[Clause]]
+    | Fresh [Symbol] [Clause]
+</pre>
+
+<pre class="Python">
+@dataclass
+class Relation:
+    name: Symbol
+    args: List[SExp]
+
+@dataclass
+class Conde:
+    conjunctions: [['Clause']]
+
+@dataclass
+class Fresh:
+    vars: List[Symbol]
+    clauses: List['Clause']
+
+Clause = Relation | Conde | Fresh
+</pre>
