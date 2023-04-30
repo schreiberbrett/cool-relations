@@ -1,0 +1,245 @@
+<h1>Polyglot Programming</h1>
+<code>Poo poo pee pee</code>
+<p>
+    The Codex Bezae is an ancient-era handwritten book where each left-side page of Greek has a translation into Latin on the right-side page. It is digitized at <a href="https://cudl.lib.cam.ac.uk/view/MS-NN-00002-00041">https://cudl.lib.cam.ac.uk/view/MS-NN-00002-00041</a>. It was immensely helpful for me when I was studying Greek and Latin. The Biblical vocabulary and grammar was plain and I had two translations to work with.
+</p>
+
+<p>
+    I want to do something similar with this project. I hope you can learn something from similar code written in multiple programming languages.
+</p>
+
+<h2></h2>
+Since this document is read from top to bottom by the <a href="www.github.com/schreiberbrett/cool-relations/misc/bezae-compiler.py">Bezae compiler</a>, all import statements must be included first.
+
+
+<div class="carousel">
+<pre data-lang="Python">
+from typing import List, Tuple
+from dataclasses import dataclass
+</pre>
+
+<pre data-lang="C">
+#include &lt;stdbool.h&gt;
+</pre>
+</div>
+
+<h2>What is an S-Expression?</h2>
+An S-Expression (here on referred to as a SExp) is either an atom, or a pair. All atoms will be represented as a symbol, and for most languages, a symbol is just a string.
+
+<div class="carousel">
+<pre data-lang="Python">
+Symbol = str
+</pre>
+
+<pre data-lang="C">
+typedef char* Symbol;
+</pre>
+
+<pre data-lang="Typescript">
+type Symbol = string
+</pre>
+</div>
+
+The pair case of SExp is more complicated, because it contains two SExps as children. S-Expressions come from Lisp, and in Lisp, this pair case is called a cons pair, where the left child is called car and the right child is called cdr.
+
+<div class="carousel">
+<pre data-lang="Python">
+SExp = Symbol | Tuple['SExp', 'SExp']
+</pre>
+
+<pre data-lang="Typescript">
+type SExp = {
+    kind: 'SYMBOL',
+    sym: Symbol
+} | {
+    kind: 'CONS',
+    car: SExp,
+    cdr: SExp
+}
+</pre>
+
+<pre data-lang="Haskell">
+data SExp = Sym Symbol | Cons SExp SExp
+</pre>
+
+<pre data-lang="C">
+enum Tag { SYMBOL, CONS };
+
+struct SExp {
+    enum Tag kind;
+    Symbol sym;
+    struct SExp *car;
+    struct SExp *cdr;
+};
+</pre>
+</div>
+
+
+<h2>Does the symbol occur anywhere in the SExp?</h2>
+Given: a <code>Symbol</code> and a <code>SExp</code>, returns true if the SExp contains the same symbol (that is, a string with the same contents).
+
+<div class="carousel">
+<pre data-lang="Python">
+def symbol_occurs_in_sexp(sym: Symbol, sexp: SExp) -> bool:
+    match sexp:
+        case (car, cdr):
+            return (
+                symbol_occurs_in_sexp(sym, car) or
+                symbol_occurs_in_sexp(sym, cdr)
+            )
+
+        case s:
+            return sym == s
+</pre>
+
+<pre data-lang="C">
+bool symbol_occurs_in_sexp(Symbol sym, struct SExp *sexp) {
+    switch (sexp->kind) {
+        case CONS:
+            return (
+                symbol_occurs_in_sexp(sym, sexp->car) ||
+                symbol_occurs_in_sexp(sym, sexp->cdr)
+            );
+
+        case SYMBOL:
+            return strcmp(sym, sexp->sym) == 0;
+    }
+}
+</pre>
+
+<pre data-lang="Haskell">
+symbolOccursInSexp :: Symbol -> SExp -> Bool
+symbolOccursInSexp sym sexp = case sexp of
+    (Cons car cdr) ->  (
+        symbolOccursInSexp sym car ||
+        symbolOccursInSexp sym cdr
+    )
+
+    (Sym s) -> sym == s
+</pre>
+</div>
+
+<h3>Attempt 2: Respecting Quotation</h3>
+
+Since the Scheme implementation uses quotation, it must be respected.
+
+
+<h2>Replace symbol in a SExp</h2>
+Given a symbol, an s-expression replacement, and an s-expression body, returns a new s-expression body with all occurrences of the symbol replaced with the s-expression.
+
+<div class="carousel">
+<pre data-lang="Python">
+def replace_in_sexp(sym: Symbol, replacement: SExp, body: SExp) -> SExp:
+    
+</pre>
+</div>
+
+<h2>miniKanren and the definition of a clause</h2>
+
+
+For my purposes, the definition of a miniKanren clause is best described in Haskell:
+
+<div class="carousel">
+<pre data-lang="Haskell">
+data Clause
+    = Relation Symbol [SExp]
+    | Conde [[Clause]]
+    | Fresh [Symbol] [Clause]
+</pre>
+
+<pre data-lang="Python">
+@dataclass
+class Relation:
+    name: Symbol
+    args: List[SExp]
+
+@dataclass
+class Conde:
+    conjunctions: List[List['Clause']]
+
+@dataclass
+class Fresh:
+    vars: List[Symbol]
+    clauses: List['Clause']
+
+Clause = Relation | Conde | Fresh
+</pre>
+</div>
+
+
+<h2>defrel, run, and run*</h2>
+The final pieces of miniKanren syntax allow us to define and run relations.
+
+<div class="carousel">
+<pre data-lang="Haskell">
+data Defrel = Defrel Symbol [Symbol] [Clause]
+</pre>
+<pre data-lang="Python">
+@dataclass
+class Defrel:
+    name: Symbol
+    args: List[Symbol]
+    clauses: List[Clause]
+</pre>
+</div>
+
+
+<h2>The appendo relation</h2>
+Having defined all the miniKanren keywords, I can now write the classic appendo relation.
+
+<div class="carousel">
+<pre data-lang="Scheme">
+'(defrel (appendo l r o)
+    (conde
+        ((== l '()) (== r o))
+        ((fresh (h t rec)
+            (== l `(,h . ,t))
+            (== o `(,h . ,rec))
+            (appendo t r rec)))))
+</pre>
+
+<pre data-lang="Python">
+appendo = Defrel('appendo', ['l', 'r', 'o'], [
+    Conde([
+        [Relation('==', ['l', 'nil']), Relation('==', ['r', 'o'])],
+        [Fresh(['h', 't', 'rec'], [
+            Relation('==', ['l', ('h', 't')]),
+            Relation('==', ['o', ('h', 'rec')]),
+            Relation('appendo', ['t', 'r', 'rec'])])]])])
+</pre>
+</div>
+
+
+<style>
+.carousel {
+   display: flex;
+   flex-wrap: nowrap;
+   overflow-x: auto;
+   -webkit-overflow-scrolling: touch;
+   -ms-overflow-style: -ms-autohiding-scrollbar; 
+ }
+
+ pre {
+  flex: 0 0 auto;
+  border: 2px dotted black;
+  margin: 5px;
+  padding: 5px;
+}
+</style>
+
+<!--
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.7.0/build/styles/default.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.7.0/build/highlight.min.js"></script>-->
+<script>
+/*const codeblocks = document.getElementsByTagName('pre');
+for (const codeblock of codeblocks) {
+    const codeElement = document.createElement('code')
+    codeElement.tagName = 'code';
+    codeElement.innerText = codeblock.innerText;
+    codeblock.innerText = '';
+    codeblock.appendChild(codeElement);
+}*/
+
+// hljs.highlightAll();
+</script>
