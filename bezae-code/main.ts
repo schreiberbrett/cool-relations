@@ -1,7 +1,7 @@
 
 type Symbol = string
 
-SExp = {
+type SExp = {
     kind: 'SYMBOL',
     sym: Symbol
 } | {

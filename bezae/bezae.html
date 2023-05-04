@@ -1,5 +1,14 @@
-<h1>Polyglot Programming</h1>
-<code>Poo poo pee pee</code>
+<!DOCTYPE html>
+<html>
+<head>
+    <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/themes/prism.min.css"
+        rel="stylesheet"
+    />
+</head>
+<body>
+<h1>Iterative miniKanren in multiple languages</h1>
+<h2>Motivation</h2>
 <p>
     The Codex Bezae is an ancient-era handwritten book where each left-side page of Greek has a translation into Latin on the right-side page. It is digitized at <a href="https://cudl.lib.cam.ac.uk/view/MS-NN-00002-00041">https://cudl.lib.cam.ac.uk/view/MS-NN-00002-00041</a>. It was immensely helpful for me when I was studying Greek and Latin. The Biblical vocabulary and grammar was plain and I had two translations to work with.
 </p>
@@ -13,41 +22,54 @@ Since this document is read from top to bottom by the <a href="www.github.com/sc
 
 
 <div class="carousel">
-<pre data-lang="Python">
+<pre><code class="language-python">
 from typing import List, Tuple
 from dataclasses import dataclass
-</pre>
+</code></pre>
 
-<pre data-lang="C">
+<pre><code class="language-c">
 #include &lt;stdbool.h&gt;
-</pre>
+</code></pre>
 </div>
 
 <h2>What is an S-Expression?</h2>
 An S-Expression (here on referred to as a SExp) is either an atom, or a pair. All atoms will be represented as a symbol, and for most languages, a symbol is just a string.
 
 <div class="carousel">
-<pre data-lang="Python">
+<pre><code class="language-python">
 Symbol = str
-</pre>
+</code></pre>
 
-<pre data-lang="C">
+<pre><code class="language-c">
 typedef char* Symbol;
-</pre>
+</code></pre>
 
-<pre data-lang="Typescript">
+<pre><code class="language-typescript">
 type Symbol = string
-</pre>
+</code></pre>
+
+<pre><code class="language-haskell">
+type Symbol = String
+</code></pre>
 </div>
 
 The pair case of SExp is more complicated, because it contains two SExps as children. S-Expressions come from Lisp, and in Lisp, this pair case is called a cons pair, where the left child is called car and the right child is called cdr.
 
 <div class="carousel">
-<pre data-lang="Python">
-SExp = Symbol | Tuple['SExp', 'SExp']
-</pre>
+<pre><code class="language-python">
+@dataclass
+class Sym:
+    sym: Symbol
 
-<pre data-lang="Typescript">
+@dataclass
+class Cons:
+    car: 'SExp'
+    cdr: 'SExp'
+
+SExp = Sym | Cons
+</code></pre>
+
+<pre><code class="language-typescript">
 type SExp = {
     kind: 'SYMBOL',
     sym: Symbol
@@ -56,22 +78,30 @@ type SExp = {
     car: SExp,
     cdr: SExp
 }
-</pre>
+</code></pre>
 
-<pre data-lang="Haskell">
+<pre><code class="language-haskell">
 data SExp = Sym Symbol | Cons SExp SExp
-</pre>
+</code></pre>
 
-<pre data-lang="C">
+<pre><code class="language-c">
 enum Tag { SYMBOL, CONS };
 
 struct SExp {
     enum Tag kind;
-    Symbol sym;
-    struct SExp *car;
-    struct SExp *cdr;
+    union {
+        // kind == SYMBOL
+        struct {
+            Symbol sym;
+        };
+        // kind == CONS
+        struct {
+            struct SExp *car;
+            struct SExp *cdr;
+        };
+    };
 };
-</pre>
+</code></pre>
 </div>
 
 
@@ -79,44 +109,43 @@ struct SExp {
 Given: a <code>Symbol</code> and a <code>SExp</code>, returns true if the SExp contains the same symbol (that is, a string with the same contents).
 
 <div class="carousel">
-<pre data-lang="Python">
-def symbol_occurs_in_sexp(sym: Symbol, sexp: SExp) -> bool:
+<pre><code class="language-python">
+def symbol_occurs_in_sexp(x: Symbol, sexp: SExp) -> bool:
     match sexp:
-        case (car, cdr):
+        case Sym(sym):
+            return x == sym
+
+        case Cons(car, cdr):
             return (
-                symbol_occurs_in_sexp(sym, car) or
-                symbol_occurs_in_sexp(sym, cdr)
+                symbol_occurs_in_sexp(x, car) or
+                symbol_occurs_in_sexp(x, cdr)
             )
+</code></pre>
 
-        case s:
-            return sym == s
-</pre>
-
-<pre data-lang="C">
-bool symbol_occurs_in_sexp(Symbol sym, struct SExp *sexp) {
+<pre><code class="language-c">
+bool symbol_occurs_in_sexp(Symbol x, struct SExp *sexp) {
     switch (sexp->kind) {
+        case SYMBOL:
+            return strcmp(x, sexp->sym) == 0;
+
         case CONS:
             return (
-                symbol_occurs_in_sexp(sym, sexp->car) ||
-                symbol_occurs_in_sexp(sym, sexp->cdr)
+                symbol_occurs_in_sexp(x, sexp->car) ||
+                symbol_occurs_in_sexp(x, sexp->cdr)
             );
-
-        case SYMBOL:
-            return strcmp(sym, sexp->sym) == 0;
     }
 }
-</pre>
+</code></pre>
 
-<pre data-lang="Haskell">
+<pre><code class="language-haskell">
 symbolOccursInSexp :: Symbol -> SExp -> Bool
-symbolOccursInSexp sym sexp = case sexp of
-    (Cons car cdr) ->  (
-        symbolOccursInSexp sym car ||
-        symbolOccursInSexp sym cdr
-    )
+symbolOccursInSexp x sexp = case sexp of
+    (Sym sym) -> x == sym
 
-    (Sym s) -> sym == s
-</pre>
+    (Cons car cdr) ->
+        symbolOccursInSexp x car ||
+        symbolOccursInSexp x cdr
+</code></pre>
 </div>
 
 <h3>Attempt 2: Respecting Quotation</h3>
@@ -127,12 +156,7 @@ Since the Scheme implementation uses quotation, it must be respected.
 <h2>Replace symbol in a SExp</h2>
 Given a symbol, an s-expression replacement, and an s-expression body, returns a new s-expression body with all occurrences of the symbol replaced with the s-expression.
 
-<div class="carousel">
-<pre data-lang="Python">
-def replace_in_sexp(sym: Symbol, replacement: SExp, body: SExp) -> SExp:
-    
-</pre>
-</div>
+This is only a problem in Scheme.
 
 <h2>miniKanren and the definition of a clause</h2>
 
@@ -140,14 +164,14 @@ def replace_in_sexp(sym: Symbol, replacement: SExp, body: SExp) -> SExp:
 For my purposes, the definition of a miniKanren clause is best described in Haskell:
 
 <div class="carousel">
-<pre data-lang="Haskell">
+<pre><code class="language-haskell">
 data Clause
     = Relation Symbol [SExp]
     | Conde [[Clause]]
     | Fresh [Symbol] [Clause]
-</pre>
+</code></pre>
 
-<pre data-lang="Python">
+<pre><code class="language-python">
 @dataclass
 class Relation:
     name: Symbol
@@ -163,7 +187,7 @@ class Fresh:
     clauses: List['Clause']
 
 Clause = Relation | Conde | Fresh
-</pre>
+</code></pre>
 </div>
 
 
@@ -171,16 +195,16 @@ Clause = Relation | Conde | Fresh
 The final pieces of miniKanren syntax allow us to define and run relations.
 
 <div class="carousel">
-<pre data-lang="Haskell">
+<pre><code class="language-haskell">
 data Defrel = Defrel Symbol [Symbol] [Clause]
-</pre>
-<pre data-lang="Python">
+</code></pre>
+<pre><code class="language-python">
 @dataclass
 class Defrel:
     name: Symbol
     args: List[Symbol]
     clauses: List[Clause]
-</pre>
+</code></pre>
 </div>
 
 
@@ -188,7 +212,7 @@ class Defrel:
 Having defined all the miniKanren keywords, I can now write the classic appendo relation.
 
 <div class="carousel">
-<pre data-lang="Scheme">
+<pre><code class="language-scheme">
 '(defrel (appendo l r o)
     (conde
         ((== l '()) (== r o))
@@ -196,9 +220,9 @@ Having defined all the miniKanren keywords, I can now write the classic appendo 
             (== l `(,h . ,t))
             (== o `(,h . ,rec))
             (appendo t r rec)))))
-</pre>
+</code></pre>
 
-<pre data-lang="Python">
+<pre><code class="language-python">
 appendo = Defrel('appendo', ['l', 'r', 'o'], [
     Conde([
         [Relation('==', ['l', 'nil']), Relation('==', ['r', 'o'])],
@@ -206,7 +230,7 @@ appendo = Defrel('appendo', ['l', 'r', 'o'], [
             Relation('==', ['l', ('h', 't')]),
             Relation('==', ['o', ('h', 'rec')]),
             Relation('appendo', ['t', 'r', 'rec'])])]])])
-</pre>
+</code></pre>
 </div>
 
 
@@ -219,27 +243,36 @@ appendo = Defrel('appendo', ['l', 'r', 'o'], [
    -ms-overflow-style: -ms-autohiding-scrollbar; 
  }
 
+ /*
  pre {
   flex: 0 0 auto;
   border: 2px dotted black;
   margin: 5px;
   padding: 5px;
-}
+} */
 </style>
 
 <!--
 <link rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.7.0/build/styles/default.min.css">
 <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.7.0/build/highlight.min.js"></script>-->
-<script>
-/*const codeblocks = document.getElementsByTagName('pre');
-for (const codeblock of codeblocks) {
-    const codeElement = document.createElement('code')
-    codeElement.tagName = 'code';
-    codeElement.innerText = codeblock.innerText;
-    codeblock.innerText = '';
-    codeblock.appendChild(codeElement);
-}*/
-
-// hljs.highlightAll();
-</script>
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/prism.min.js"
+></script>
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/components/prism-python.min.js"
+></script>
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/components/prism-c.min.js"
+></script>
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/components/prism-haskell.min.js"
+></script>
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/components/prism-typescript.min.js"
+></script>
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/components/prism-scheme.min.js"
+></script>
+</body>
+</html>

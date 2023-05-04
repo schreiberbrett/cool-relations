@@ -16,31 +16,29 @@ def to_dict(l: List[Tuple[H, T]]) -> Dict[H, List[T]]:
 
 
 filename_for = {
-    'Python': 'main.py',
-    'Haskell': 'Main.hs',
-    'Typescript': 'main.ts',
-    'C': 'main.c',
-    'Scheme': 'main.scm'
+    'language-python': 'main.py',
+    'language-haskell': 'Main.hs',
+    'language-typescript': 'main.ts',
+    'language-c': 'main.c',
+    'language-scheme': 'main.scm'
 }
 
 Language = str
 
-with open('bezae.html', 'r') as f:
+with open('bezae/bezae.html', 'r') as f:
     contents = f.read()
 
     soup = BeautifulSoup(contents, 'html.parser')
 
-    pres: Iterable[Tag] = soup.find_all('pre')
+    pres: Iterable[Tag] = soup.find_all('code')
 
     code_segments = [
-        (pre.attrs['data-lang'], pre.text)
+        (pre.attrs['class'][0], pre.text)
         for pre in pres
-        if 'data-lang' in pre.attrs
+        if 'class' in pre.attrs
     ]
 
     code_segments_by_class = to_dict(code_segments)
-
-    print(code_segments_by_class)
 
     for classname, segments in code_segments_by_class.items():
         if classname in filename_for:

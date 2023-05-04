@@ -17,6 +17,9 @@ def symbol_occurs_in_sexp(sym: Symbol, sexp: SExp) -> bool:
         case s:
             return sym == s
 
+def replace_in_sexp(sym: Symbol, replacement: SExp, body: SExp) -> SExp:
+    
+
 @dataclass
 class Relation:
     name: Symbol
