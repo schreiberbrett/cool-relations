@@ -23,12 +23,14 @@ Since this document is read from top to bottom by the <a href="www.github.com/sc
 
 <div class="carousel">
 <pre><code class="language-python">
-from typing import List, Tuple
+from typing import List
 from dataclasses import dataclass
 </code></pre>
 
 <pre><code class="language-c">
+#include &lt;stdlib.h&gt;
 #include &lt;stdbool.h&gt;
+#include &lt;string.h&gt;
 </code></pre>
 </div>
 
@@ -85,10 +87,10 @@ data SExp = Sym Symbol | Cons SExp SExp
 </code></pre>
 
 <pre><code class="language-c">
-enum Tag { SYMBOL, CONS };
+enum SExpTag { SYMBOL, CONS };
 
 struct SExp {
-    enum Tag kind;
+    enum SExpTag kind;
     union {
         // kind == SYMBOL
         struct {
@@ -101,6 +103,17 @@ struct SExp {
         };
     };
 };
+
+// It would be useful to have some constructors as well
+
+struct SExp *make_Cons(struct SExp *car, struct SExp *cdr) {
+    struct SExp *result = malloc(sizeof(struct SExp));
+    result->kind = CONS;
+    result->car = car;
+    result->cdr = cdr;
+    return result;
+}
+
 </code></pre>
 </div>
 
@@ -148,19 +161,55 @@ symbolOccursInSexp x sexp = case sexp of
 </code></pre>
 </div>
 
-<h3>Attempt 2: Respecting Quotation</h3>
-
-Since the Scheme implementation uses quotation, it must be respected.
-
-
 <h2>Replace symbol in a SExp</h2>
 Given a symbol, an s-expression replacement, and an s-expression body, returns a new s-expression body with all occurrences of the symbol replaced with the s-expression.
 
-This is only a problem in Scheme.
+<div class="carousel">
+<pre><code class="language-haskell">
+replaceSymbolInSExp :: Symbol -> SExp -> SExp -> SExp
+replaceSymbolInSExp replaceMe replaceWith sexp = case sexp of
+    (Sym sym) -> if sym == replaceMe
+        then replaceWith
+        else Sym sym
+    (Cons car cdr) -> Cons
+        (replaceSymbolInSExp replaceMe replaceWith car)
+        (replaceSymbolInSExp replaceMe replaceWith cdr)
+</code></pre>
+<pre><code class="language-python">
+def replace_symbol_in_sexp(replace_me: Symbol, replace_with: SExp, sexp: SExp) -> SExp:
+    match sexp:
+        case Sym(sym):
+            if sym == replace_me:
+                return replace_with
+            else:
+                return Sym(sym)
+
+        case Cons(car, cdr):
+            return Cons(
+                replace_symbol_in_sexp(replace_me, replace_with, car),
+                replace_symbol_in_sexp(replace_me, replace_with, cdr)
+            )
+</code></pre>
+<pre><code class="language-c">
+struct SExp *replace_symbol_in_sexp(Symbol replace_me, struct SExp *replace_with, struct SExp *sexp) {
+    switch (sexp->kind) {
+        case SYMBOL:
+            return (strcmp(sexp->sym, replace_me) == 0)
+                ? replace_with
+                : sexp;
+
+        case CONS:
+            return make_Cons(
+                replace_symbol_in_sexp(replace_me, replace_with, sexp->car),
+                replace_symbol_in_sexp(replace_me, replace_with, sexp->cdr)
+            );
+    }
+}
+</code></pre>
+</div>
+
 
 <h2>miniKanren and the definition of a clause</h2>
-
-
 For my purposes, the definition of a miniKanren clause is best described in Haskell:
 
 <div class="carousel">
@@ -187,6 +236,79 @@ class Fresh:
     clauses: List['Clause']
 
 Clause = Relation | Conde | Fresh
+</code></pre>
+
+<pre><code class="language-c">
+enum ClauseTag { RELATION, CONDE, FRESH };
+
+struct Clause {
+    enum ClauseTag kind;
+
+    union {
+        // kind == RELATION
+        struct {
+            Symbol name;
+            struct SExp *args;
+            int num_args;
+        };
+
+        // kind == CONDE
+        struct {
+            struct Clause **conjunctions;
+            int *nums_clauses;
+            int num_conjunctions;
+        };
+
+        // kind == FRESH
+        struct {
+            Symbol *vars;
+            int num_vars;
+            struct Clause *clauses;
+            int num_clauses;
+        };
+    };
+};
+</code></pre>
+</div>
+
+<h2>Replace symbol with s-expression in a miniKanren clause</h2>
+Given a symbol, an SExp to replace it with, and a miniKanren clause, produce a new clause with all occurrences of the symbol replaced with the s-expression. But it must also respect lexical scope: if a fresh clause defines an identical symbol, do not replace in the fresh body, because the symbol has been shadowed.
+
+<div class="carousel">
+<pre><code class="language-haskell">
+replaceSymbolInClause :: Symbol -> SExp -> Clause -> Clause
+replaceSymbolInClause replaceMe replaceWith clause = case clause of
+    Relation name args ->
+        Relation name (map (replaceSymbolInSExp replaceMe replaceWith) args)
+
+    Conde conjunctions ->
+        Conde (map (map (replaceSymbolInClause replaceMe replaceWith)) conjunctions)
+
+    Fresh vars clauses ->
+        if replaceMe `elem` vars
+        then Fresh vars clauses
+        else Fresh vars (map (replaceSymbolInClause replaceMe replaceWith) clauses)
+</code></pre>
+<pre><code class="language-python">
+def replace_symbol_in_clause(replace_me: Symbol, replace_with: SExp, clause: Clause) -> Clause:
+    match clause:
+        case Relation(name, args):
+            return Relation(name, [replace_symbol_in_sexp(replace_me, replace_with, arg) for arg in args])
+
+        case Conde(conjunctions):
+            return Conde([[replace_symbol_in_clause(replace_me, replace_with, clause)
+                for clause in conjunction]
+                for conjunction in conjunctions
+            ])
+
+        case Fresh(vars, clauses):
+            if replace_me in vars:
+                return Fresh(vars, clauses)
+            else:
+                return Fresh(vars, [
+                    replace_symbol_in_clause(replace_me, replace_with, clause)
+                    for clause in clauses
+                ])
 </code></pre>
 </div>
 
@@ -225,11 +347,11 @@ Having defined all the miniKanren keywords, I can now write the classic appendo 
 <pre><code class="language-python">
 appendo = Defrel('appendo', ['l', 'r', 'o'], [
     Conde([
-        [Relation('==', ['l', 'nil']), Relation('==', ['r', 'o'])],
+        [Relation('==', [Sym('l'), Sym('nil')]), Relation('==', [Sym('r'), Sym('o')])],
         [Fresh(['h', 't', 'rec'], [
-            Relation('==', ['l', ('h', 't')]),
-            Relation('==', ['o', ('h', 'rec')]),
-            Relation('appendo', ['t', 'r', 'rec'])])]])])
+            Relation('==', [Sym('l'), Cons(Sym('h'), Sym('t'))]),
+            Relation('==', [Sym('o'), Cons(Sym('h'), Sym('rec'))]),
+            Relation('appendo', [Sym('t'), Sym('r'), Sym('rec')])])]])])
 </code></pre>
 </div>
 

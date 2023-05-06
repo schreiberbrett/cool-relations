@@ -1,24 +1,44 @@
 
-from typing import List, Tuple
+from typing import List
 from dataclasses import dataclass
 
 Symbol = str
 
-SExp = Symbol | Tuple['SExp', 'SExp']
+@dataclass
+class Sym:
+    sym: Symbol
 
-def symbol_occurs_in_sexp(sym: Symbol, sexp: SExp) -> bool:
+@dataclass
+class Cons:
+    car: 'SExp'
+    cdr: 'SExp'
+
+SExp = Sym | Cons
+
+def symbol_occurs_in_sexp(x: Symbol, sexp: SExp) -> bool:
     match sexp:
-        case (car, cdr):
+        case Sym(sym):
+            return x == sym
+
+        case Cons(car, cdr):
             return (
-                symbol_occurs_in_sexp(sym, car) or
-                symbol_occurs_in_sexp(sym, cdr)
+                symbol_occurs_in_sexp(x, car) or
+                symbol_occurs_in_sexp(x, cdr)
             )
 
-        case s:
-            return sym == s
+def replace_symbol_in_sexp(replace_me: Symbol, replace_with: SExp, sexp: SExp) -> SExp:
+    match sexp:
+        case Sym(sym):
+            if sym == replace_me:
+                return replace_with
+            else:
+                return Sym(sym)
 
-def replace_in_sexp(sym: Symbol, replacement: SExp, body: SExp) -> SExp:
-    
+        case Cons(car, cdr):
+            return Cons(
+                replace_symbol_in_sexp(replace_me, replace_with, car),
+                replace_symbol_in_sexp(replace_me, replace_with, cdr)
+            )
 
 @dataclass
 class Relation:
@@ -36,6 +56,26 @@ class Fresh:
 
 Clause = Relation | Conde | Fresh
 
+def replace_symbol_in_clause(replace_me: Symbol, replace_with: SExp, clause: Clause) -> Clause:
+    match clause:
+        case Relation(name, args):
+            return Relation(name, [replace_symbol_in_sexp(replace_me, replace_with, arg) for arg in args])
+
+        case Conde(conjunctions):
+            return Conde([[replace_symbol_in_clause(replace_me, replace_with, clause)
+                for clause in conjunction]
+                for conjunction in conjunctions
+            ])
+
+        case Fresh(vars, clauses):
+            if replace_me in vars:
+                return Fresh(vars, clauses)
+            else:
+                return Fresh(vars, [
+                    replace_symbol_in_clause(replace_me, replace_with, clause)
+                    for clause in clauses
+                ])
+
 @dataclass
 class Defrel:
     name: Symbol
@@ -44,8 +84,8 @@ class Defrel:
 
 appendo = Defrel('appendo', ['l', 'r', 'o'], [
     Conde([
-        [Relation('==', ['l', 'nil']), Relation('==', ['r', 'o'])],
+        [Relation('==', [Sym('l'), Sym('nil')]), Relation('==', [Sym('r'), Sym('o')])],
         [Fresh(['h', 't', 'rec'], [
-            Relation('==', ['l', ('h', 't')]),
-            Relation('==', ['o', ('h', 'rec')]),
-            Relation('appendo', ['t', 'r', 'rec'])])]])])
+            Relation('==', [Sym('l'), Cons(Sym('h'), Sym('t'))]),
+            Relation('==', [Sym('o'), Cons(Sym('h'), Sym('rec'))]),
+            Relation('appendo', [Sym('t'), Sym('r'), Sym('rec')])])]])])
