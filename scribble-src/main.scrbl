@@ -4,6 +4,7 @@
 @title{Cool Relations}
 
 @(require scribble/manual)
+@(require scriblib/figure)
 
 @section{Code from The Reasoned Schemer 2nd Edition}
 @chunk[<load>
@@ -536,77 +537,134 @@ Their plural counterparts, @racket[occurs-in-exps] and @racket[occurs-in-sexps],
        <exp-operations>
        <sexp-operations>
        <quasiquotation>
-       <rest-first-order-minikanren>]
+       <rest-first-order-minikanren>
+       <replace-in-exp>
+       <replace-in-sexp>
+       <qq-replace-in-sexp>
+       <replace-definitions>]
 
 @chunk[<exp-operations>
-       (define (occurs-in-exp? x exp)
+       (define (occurs-in-exp? sym exp)
          (match exp
            (`(conde . ,exps*)
-            (any (lambda (exps) (occurs-in-exps? x exps)) exps*))
+            (any (lambda (exps) (occurs-in-exps? sym exps)) exps*))
 
            (`(fresh ,vars . ,exps)
-            (and (not (any-occurs-in-sexp? vars x))
-                 (occurs-in-exps? x exps)))
+            (and (not (any-occurs-in-sexp? vars sym))
+                 (occurs-in-exps? sym exps)))
 
            (`(,rel . ,sexps)
-            (occurs-in-sexps? x sexps))))
-
-       (define (replace-in-exp x y exp)
-         (match exp
-           (`(conde . ,exps*)
-            `(conde . ,(map (lambda (exps) (replace-in-exps x y exps)) exps*)))
-
-           (`(fresh ,vars . ,exps)
-            `(fresh ,vars . ,(if (or (any-occurs-in-sexp? vars x)
-                                     (any-occurs-in-sexp? vars y))
-                                 exps
-                                 (replace-in-exps x y exps))))
-
-           (`(,rel . ,sexps)
-            `(,rel . ,(replace-in-sexps x y sexps)))))]
+            (occurs-in-sexps? sym sexps))))]
 
 @chunk[<sexp-operations>
-       (define (occurs-in-sexp? x sexp)
-         (or (equal? x sexp)
+       (define (occurs-in-sexp? sym sexp)
+         (or (equal? sym sexp)
              (match sexp
                (`(,h . ,t) (match h
-                             ('quasiquote (qq-occurs-in-sexp? x t))
+                             ('quasiquote (qq-occurs-in-sexp? sym t))
                              ('quote #f)
-                             (_ (or (occurs-in-sexp? x h)
-                                    (occurs-in-sexp? x t)))))
-               (_ #f))))
-
-       (define (replace-in-sexp x y sexp)
-         (if (equal? x sexp) y 
-             (match sexp
-               (`(,h . ,t) (match h
-                             ('quasiquote (cons h (qq-replace-in-sexp x y t)))
-                             ('quote (cons h t))
-                             (_ (cons (replace-in-sexp x y h)
-                                      (replace-in-sexp x y t)))))
-               (_ sexp))))]
+                             (_ (or (occurs-in-sexp? sym h)
+                                    (occurs-in-sexp? sym t)))))
+               (_ #f))))]
 
 @subsection{The problem with quasiquote}
 Quasiquote means that I need to introduce mutual recursion. You can think of it like recurring with a boolean flag signaling that the s-expression in question is part of a larger, quasiquoted s-expression, so the code should deal with the case of @racket[unquote].
 
 @chunk[<quasiquotation>
-       (define (qq-occurs-in-sexp? x sexp)
+       (define (qq-occurs-in-sexp? sym sexp)
          (match sexp
            (`(,h . ,t) (match h
-                         ('unquote (occurs-in-sexp? x t))
+                         ('unquote (occurs-in-sexp? sym t))
                          ('quote #f)
-                         (_ (or (qq-occurs-in-sexp? x h)
-                                (qq-occurs-in-sexp? x t)))))
-           (_ #f)))
+                         (_ (or (qq-occurs-in-sexp? sym h)
+                                (qq-occurs-in-sexp? sym t)))))
+           (_ #f)))]
 
-       (define (qq-replace-in-sexp x y sexp)
+
+@subsection{Using gensym to create copies of relations with no name conflicts}
+
+@chunk[<replace-in-exp>
+       (define (replace-in-exp replacements exp)
+         (match exp
+           (`(conde . ,exps*)
+            `(conde . ,(map* (lambda (exp)
+                               (replace-in-exp replacements exp)) exps*)))
+
+           (`(fresh ,vars . ,exps)
+            (let ((gensyms (map (lambda (var) (gensym)) vars)))
+              `(fresh ,gensyms . ,(map (lambda (exp) (replace-in-exp (append (zip vars gensyms) replacements) exp)) exps))))
+
+           (`(,rel . ,args)
+            `(,rel . ,(map (lambda (arg)
+                             (replace-in-sexp replacements arg)) args)))))]
+
+
+@chunk[<replace-in-sexp>
+       (define (replace-in-sexp replacements sexp)
          (match sexp
            (`(,h . ,t) (match h
-                         ('unquote (cons h (replace-in-sexp x y t)))
+                         ('quote sexp)
+                         ('quasiquote (cons h (qq-replace-in-sexp replacements t)))
+                         (_ (cons (replace-in-sexp replacements h)
+                                  (replace-in-sexp replacements t)))))
+           
+           (_ (match (lookup sexp replacements)
+                (`(just ,replacement) replacement)
+                ('(nothing) sexp)))))]
+
+Given a list of pairs @racket[replacements], and an s-expression @racket[sexp], return a copy of the s-expression, except that any symbol appearing in the left-hand side of @racket[replacements] is replaced by the associated right-hand side.
+
+@chunk[<qq-replace-in-sexp>
+       (define (qq-replace-in-sexp replacements sexp)
+         (match sexp
+           (`(,h . ,t) (match h
+                         ('unquote (cons h (replace-in-sexp replacements t)))
                          ('quote (cons h t))
-                         (_ (cons (qq-replace-in-sexp x y h)
-                                  (qq-replace-in-sexp x y t)))))
+                         (_ (cons (qq-replace-in-sexp replacements h)
+                                  (qq-replace-in-sexp replacements t)))))
+
            (_ sexp)))]
+As always, quasiquotation needs to be dealt with, so a separate mutually recursive call is made with the @racket[qq-] prefix to track that the procedure is in a quasiquoted environment.
+
+@subsection{Algorithm design}
+@image["img/algorithm-design.png"]
+
+
+@chunk[<replace-definitions>
+       (define (replace-definitions defrels exps)
+         (append-map
+          (lambda (exp)
+            (match exp
+              (`(conde . ,exps*)
+               `((conde . ,(map (lambda (exps) (replace-definitions defrels exps)) exps*))))
+
+              (`(fresh ,vars . ,exps)
+               `((fresh ,vars ,(replace-definitions defrels exps))))
+
+              (`(== ,u ,v)
+               `((== ,u ,v)))
+
+              (`(,rel . ,args) (let ((defrel (car (filter
+                                                   (lambda (defrel)
+                                                     (match defrel
+                                                       (`(defrel (,name . ,params) . ,exps)
+                                                        (equal? rel name)))) defrels))))
+
+                                 (match defrel
+                                   (`(defrel (,name . ,params) . ,exps)
+                                    (map (lambda (exp) (replace-in-exp (zip params args) exp)) exps)))))))
+          exps))]
+Given a list of relation definitions @racket[defrels], and a list of miniKanren expressions @racket[exps],
+return a new list of expressions where all named relations have been replaced with their definition.
+
+
+@chunk[<is-simple-conjunction?>
+       (define (is-simple-conjunction? conjunction)
+         (all (lambda (exp) (match exp
+                              (`(== ,u ,v) #t)
+                              (_ #f))) conjunction))]
+                                                                             
+
 
 @chunk[<rest-first-order-minikanren>       
        (define (unify-exps exps)
@@ -744,15 +802,11 @@ In miniKanren:-
                               (qk1 qk2 ... qkl))))]
 
 @chunk[<disjunction-of-ednfs>
-       (define (disjunction ednfa ednfb)
-         (match `(,ednfa ,ednfb)
-           (`((fresh ,xs
-                     (conde . ,ps))
-              (fresh ,ys
-                     (conde . ,qs)))
+       (define (disjunction ednf-a ednf-b)
+         (match `(,ednf-a ,ednf-b)
+           (`((fresh ,xs (conde . ,ps)) (fresh ,ys (conde . ,qs)))
 
-            `(fresh ,(append xs ys)
-                    (conde . ,(append ps qs))))))]
+            `(fresh ,(append xs ys) (conde . ,(append ps qs))))))]
        
 
 @subsection{Associative conjunction* and disjunction*}
@@ -776,7 +830,88 @@ In miniKanren:-
                                      (`(fresh ,xs . ,ps) `(fresh ,(append vars xs) . ,ps))))
            (`(conde . ,exps*) (disjunction* (map (lambda (exps) (conjunction* (map exp-to-ednf exps))) exps*)))
            (`(,rel . ,args) `(fresh ()
-                                    (conde ((,rel . ,args))) ))))]
+                                    (conde ((,rel . ,args)))))))]
+
+Since a @racket[run] statement takes a conjunction of expressions, it is necessary to have a version from conjunction to ednf.
+
+@chunk[<conjunction-to-ednf>
+       (define (conjunction-to-ednf exps)
+         (conjunction* (map exp-to-ednf exps)))]
+
+
+@subsection{Replace definitions in EDNF}
+The @racket[replace-definitions] function takes a list of expressions rather than a single expression, but an EDNF is a single expression. So a new function is needed that works specifically on EDNFs.
+
+@chunk[<replace-definitions-in-ednf>
+       (define (replace-definitions-in-ednf defrels ednf)
+         (match ednf
+           (`(fresh ,vars (conde . ,exps*))
+            `(fresh ,vars (conde . ,(map (lambda (exps)
+                                           (replace-definitions defrels exps)) exps*))))))]
+
+
+@subsection{A small portion of the algorithm}
+At this point there is enough code to write a small portion of the overall algorithm, namely:
+
+@image["img/algorithm-design-subset.png"]
+
+Below is an implementation of this subset on some sample miniKanren code.
+
+@chunk[<algorithm-subset>
+       (define (algorithm-subset)
+         (let* ((defrels '((defrel (appendo l r o)
+                            (conde ((== l '()) (== r o))
+                                   ((fresh (h t rec)
+                                           (== l `(,h . ,t))
+                                           (== o `(,h . ,rec))
+                                           (appendo t r rec)))))))
+
+                (exp1 '(appendo l r o))
+
+                (ednf1 (exp-to-ednf exp1))
+
+                (exp2 (replace-definitions-in-ednf defrels ednf1))
+
+                (ednf2 (exp-to-ednf exp2))
+
+                (exp3 (replace-definitions-in-ednf defrels ednf2))
+
+                (ednf3 (exp-to-ednf exp3)))
+
+           (print ednf1)
+           (display "\n\n")
+           (print exp2)
+           (display "\n\n")
+           (print ednf2)
+           (display "\n\n")
+           (print exp3)
+           (display "\n\n")
+           (print ednf3)))]
+
+
+@chunk[<algorithm-subset-iterative>
+       (define (algorithm-subset-iterative n defrels exp)
+         (match n
+           (0 (exp-to-ednf exp))
+           (_ (algorithm-subset-iterative (- n 1)
+                                          defrels
+                                          (replace-definitions-in-ednf defrels (exp-to-ednf exp))))))
+
+
+       (define my-defrels '((defrel (appendo l r o)
+                              (conde ((== l '()) (== r o))
+                                     ((fresh (h t rec)
+                                             (== l `(,h . ,t))
+                                             (== o `(,h . ,rec))
+                                             (appendo t r rec)))))))
+
+       (define my-exp '(appendo x y z))]
+
+           
+
+           
+
+
 
 @subsection{Running an EDNF}
 An EDNF is just a special form of the fresh expression in miniKanren. So imagine the special case of @racket[run] or @racket[run*] where the expression is an EDNF.
@@ -795,6 +930,10 @@ Code used:
        <disjunction-of-ednfs>
        <associative-conjunction*-and-disjunction*>
        <exp-to-ednf>
+       <conjunction-to-ednf>
+       <replace-definitions-in-ednf>
+       <algorithm-subset>
+       <algorithm-subset-iterative>
        <cartesian-product-with-append>]
 
 @section{Relational NatMaps}
@@ -971,19 +1110,37 @@ Putting it all together
            ('() #f)
            (`(,h . ,t) (or (p? h) (any p? t)))))
 
+       (define (all p? l)
+         (match l
+           ('() #t)
+           (`(,h . ,t) (and (p? h) (all p? t)))))
+
        (define (append-map f l)
          (match l
            ('() '())
            (`(,h . ,t) (append (f h) (append-map f t)))))
 
+       (define (map* f list-of-lists)
+         (map (lambda (l) (map f l)) list-of-lists)) 
+
+       (define (zip l r)
+         (match `(,l ,r)
+           ('(() ()) '())
+           (`((,lh . ,lt) (,rh . ,rt)) `((,lh ,rh) . ,(zip lt rt)))))
+
+       (define (lookup x l)
+         (match l
+           (`((,h1 ,h2) . ,t) (if (equal? x h1) `(just ,h2) (lookup x t)))
+           ('() '(nothing))))
+
        (define (occurs-in-exps? var exps)
          (any (lambda (exp) (occurs-in-exps? var exp)) exps))
 
-       (define (replace-in-exps x y exps)
-         (map (lambda (exp) (replace-in-exp x y exp)) exps))
+       (define (replace-in-exps sym replacement exps)
+         (map (lambda (exp) (replace-in-exp sym replacement exp)) exps))
 
-       (define (replace-in-sexps x y sexps)
-         (map (lambda (sexp) (replace-in-sexp x y sexp)) sexps))
+       (define (replace-in-sexps sym replacement sexps)
+         (map (lambda (sexp) (replace-in-sexp sym replacement sexp)) sexps))
 
        (define (any-occurs-in-sexp? vars sexp)
          (any (lambda (var) (occurs-in-sexp? var sexp)) vars))

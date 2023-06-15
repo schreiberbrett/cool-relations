@@ -90,3 +90,50 @@ struct Clause {
         };
     };
 };
+
+struct SExp *replace_symbol_in_clause(Symbol replace_me, struct SExp *replace_with, struct Clause *clause) {
+    switch (clause->kind) {
+        case RELATION:
+            int n = clause->num_args;
+            struct Clause *result = malloc(sizeof(struct Clause));
+            result->kind = RELATION;
+            result->num_args = n;
+            result->args = malloc(sizeof(struct SExp *) * n);
+            for (int i = 0; i < n; i++) {
+                result->args[i] = replace_symbol_in_sexp(replace_me, replace_with, clause->args[i]);
+            }
+
+            return result;
+
+        case CONDE:
+            int n = clause->num_conjunctions;
+            struct Clause *result = malloc(sizeof(struct Clause));
+            result->kind = RELATION;
+            result->num_conjunctions = n;
+            result->nums_clauses = clause->nums_clauses;
+            result->conjunctions = malloc(sizeof(struct Clause *) * n);
+            for (int i = 0; i < n; i++) {
+                int m = clause->nums_clauses[i];
+                for (int j = 0; j < m; j++) {
+                    result->conjunctions[i * n + j] = replace_symbol_in_clause(
+                        replace_me, replace_with,
+                        clause->conjunctions[i * n + j]
+                    );
+                }
+            }
+
+            return result;
+
+        case FRESH:
+            for (int i = 0; i < clause->num_vars; i++) {
+                if (strcmp(replace_me, clause->vars[i]) == 0) {
+                    return clause;
+                }
+            }
+
+            struct Clause *result = malloc(sizeof(struct Clause));
+            
+
+            return;
+    }
+}

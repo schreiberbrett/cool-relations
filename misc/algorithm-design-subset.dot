@@ -1,0 +1,8 @@
+digraph G {
+    node [shape=rectangle];
+    convert_to_ednf [label="Convert the formula into an EDNF."];
+    references_definition [label="Replace all definitons with their bodies."];
+    
+    
+    convert_to_ednf -> references_definition -> convert_to_ednf;
+}
