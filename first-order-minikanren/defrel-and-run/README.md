@@ -48,12 +48,12 @@ graph TD;
     remove_simple_conjunction["Remove the simple conjunction from the EDNF."];
     output_unified["Output the unified variabels and decrement the run number."];
     halt["Halt."];
-    references_definition["EDNF must reference a definition. Replace all definitons with their bodies."];
+    references_definition["EDNF must reference a definition.\nReplace all definitons with their bodies."];
 
-    run_equal_zero{"Does the run number equal 0?"};
-    did_unification_succeed{Did unification succeed?"};
-    is_ednf_empty{"Is the EDNF empty?"};
-    contains_a_simple_conjunction{"Does the EDNF contain\na simple conjunction?"};
+    run_equal_zero{{"Does the run number equal 0?"}};
+    did_unification_succeed{{"Did unification succeed?"}};
+    is_ednf_empty{{"Is the EDNF empty?"}};
+    contains_a_simple_conjunction{{"Does the EDNF contain\na simple conjunction?"}};
     
     starting_state --> convert_to_ednf;
 
