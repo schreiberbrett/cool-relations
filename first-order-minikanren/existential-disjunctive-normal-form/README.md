@@ -6,10 +6,12 @@ I'd like to augment a logical formula in disjunctive normal form with exactly on
 
 Here is an example of a formula in existential disjunctive normal form:
 ```math
-\exists_{a_1, a_2, a_3, b_1, b_2, b_3, c_1, c_2, c_3} \\
-(P(a_1) \land Q(a_2) \land R(a_3)) \\
-\lor (P(b_1) \land Q(b_2) \land R(b_3)) \\
-\lor (P(c_1) \land Q(c_2) \land R(c_3))
+\displaylines{
+    \exists_{a_1, a_2, a_3, b_1, b_2, b_3, c_1, c_2, c_3} \\
+        (P(a_1) \land Q(a_2) \land R(a_3)) \\
+        \lor (P(b_1) \land Q(b_2) \land R(b_3)) \\
+        \lor (P(c_1) \land Q(c_2) \land R(c_3))
+}
 ```
 
 An expression in miniKanren can be in existential disjunctive normal form as well. All that means is that the expression has the shape `(fresh (_) (conde (_) (_) (_) ... (_)))`. For convenience, I will call miniKanren expressions in this form "EDNFs".
