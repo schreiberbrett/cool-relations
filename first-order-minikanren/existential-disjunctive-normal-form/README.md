@@ -65,7 +65,7 @@ Converting an unstructured miniKanren expression into an EDNF can be computation
 ```
 
 # Conjunction
-```
+```math
 \begin{aligned}
   (\exists_{a, b}
     &(P_1(a) \land P_2(b)) \\
