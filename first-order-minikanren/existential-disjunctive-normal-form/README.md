@@ -64,7 +64,7 @@ Converting an unstructured miniKanren expression into an EDNF can be computation
 \end{aligned}
 ```
 
-# Conjunction
+## Conjunction
 ```math
 \begin{aligned}
   (\exists_{a, b}
