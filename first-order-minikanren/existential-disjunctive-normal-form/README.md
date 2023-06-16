@@ -53,7 +53,7 @@ Converting an unstructured miniKanren expression into an EDNF can be computation
   \lor
     &(Q_1(a) \land Q_2(b)) \\
   \lor
-    &(R_1(a) \land R_2(b))) \\
+    &(R_1(a) \land R_2(b)) \\
   \lor
     &(P_1(c) \land P_2(d)) \\
   \lor
