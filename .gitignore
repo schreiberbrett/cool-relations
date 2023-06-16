@@ -1,3 +1,6 @@
 node_modules
 .vscode
-scribble-src/main.scrbl~
+*.scrbl~
+*.rkt~
+*.dep
+*.zo

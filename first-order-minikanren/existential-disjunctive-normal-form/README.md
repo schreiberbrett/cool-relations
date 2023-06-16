@@ -25,3 +25,33 @@ An EDNF:
 ```
 
 Converting an unstructured miniKanren expression into an EDNF can be computationally expensive, but its doable. The main source of blowup converting conjunction of two EDNFs into a singular EDNF, because this requires performing the cartesian product in order to group together every combination of inner conjunctions.
+
+# Disjunction of two formulas in existential disjunctive normal form
+\begin{aligned}
+  &\exists_{a, b}
+    &(P_1(a) \land P_2(b)) \\
+  &\lor
+    &(Q_1(a) \land Q_2(b)) \\
+  &\lor
+    &(R_1(a) \land R_2(b)) \\\\
+\lor
+  &\exists_{c, d}
+    &(P_1(c) \land P_2(d)) \\
+  &\lor
+    &(Q_1(c) \land Q_2(d)) \\
+  &\lor
+    &(R_1(c) \land R_2(d)) \\\\
+=
+  &\exists_{a, b, c, d}
+    &(P_1(a) \land P_2(b)) \\
+  &\lor
+    &(Q_1(a) \land Q_2(b)) \\
+  &\lor
+    &(R_1(a) \land R_2(b))) \\
+  &\lor
+    &(P_1(c) \land P_2(d)) \\
+  &\lor
+    &(Q_1(c) \land Q_2(d)) \\
+  &\lor
+    &(R_1(c) \land R_2(d))
+\end{aligned}
