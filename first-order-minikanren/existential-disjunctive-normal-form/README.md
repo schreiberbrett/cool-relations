@@ -102,7 +102,7 @@ Converting an unstructured miniKanren expression into an EDNF can be computation
   \lor
     &(Q_1(a) \land Q_2(b) \land R_1(c) \land R_2(d)) \\
   \lor
-    &(R_1(a) \land R_2(b) \land R_1(c) \land R_2(d)))
+    &(R_1(a) \land R_2(b) \land R_1(c) \land R_2(d))
 )
 \end{aligned}
 ```
