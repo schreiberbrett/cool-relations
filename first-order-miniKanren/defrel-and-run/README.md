@@ -46,7 +46,7 @@ graph TD;
     convert_to_ednf["Convert the formula into an EDNF."];
     try_unifying["Try unifying according to the simple conjunction."];
     remove_simple_conjunction["Remove the simple conjunction from the EDNF."];
-    output_unified["Output the unified variabels and decrement the run number."];
+    output_unified["Output the unified variables and decrement the run number."];
     halt["Halt."];
     references_definition["EDNF must reference a definition.\nReplace all definitons with their bodies."];
 
