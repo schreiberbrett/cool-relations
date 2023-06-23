@@ -4,34 +4,34 @@
 
 (provide exp-to-ednf EDNF)
 
-(struct EDNF ([vars : (Listof Symbol)] [conjunctions : (Listof (Listof MKexp))]))
+(struct EDNF ([vars : (Listof Symbol)] [conjunctions : (Listof (Listof Relation))]))
 
 (: exp-to-ednf (-> MKexp EDNF))
 (define (exp-to-ednf exp)
-(match exp
+  (match exp
     ((Fresh vars exps)
-        (match (conjunction* (map exp-to-ednf exps))
-            ((Fresh new-vars new-exps)
-             (Fresh (append vars new-vars) new-exps))))
+     (match (conjunction* (map exp-to-ednf exps))
+       ((Fresh new-vars new-exps)
+        (Fresh (append vars new-vars) new-exps))))
 
     ((Conde exps*) (disjunction* (map (lambda ([exps : (Listof MKexp)]) (conjunction* (map exp-to-ednf exps))) exps*)))
 
-    (`(,rel . ,args) (EDNF '() `(((,rel . ,args)))))))
+    ((Relation name args) (EDNF '() (list (list (Relation name args)))))))
 
 (: conjunction (-> EDNF EDNF EDNF))
 (define (conjunction a b)
-    (match `(,a ,b)
-        (`(,(EDNF a-vars a-conjunctions) ,(EDNF b-vars b-conjunctions))
-            (EDNF (append a-vars b-vars) (cartesian-product-with-append a-conjunctions b-conjunctions)))))
+  (match `(,a ,b)
+    (`(,(EDNF a-vars a-conjunctions) ,(EDNF b-vars b-conjunctions))
+     (EDNF (append a-vars b-vars) (cartesian-product-with-append a-conjunctions b-conjunctions)))))
 
 
 (: disjunction (-> EDNF EDNF EDNF))
 (define (disjunction ednf-a ednf-b)
-    (match `(,ednf-a ,ednf-b)
-        (`(,(EDNF a-vars a-conjunctions)
-        ,(EDNF b-vars b-conjunctions))
+  (match `(,ednf-a ,ednf-b)
+    (`(,(EDNF a-vars a-conjunctions)
+       ,(EDNF b-vars b-conjunctions))
 
-            (EDNF (append a-vars b-vars) (append a-conjunctions b-conjunctions)))))
+     (EDNF (append a-vars b-vars) (append a-conjunctions b-conjunctions)))))
 
 ;; Simple folds
 

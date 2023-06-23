@@ -6,7 +6,8 @@
     append-map
     map*
     zip
-    lookup)
+    lookup
+    justs)
 
 (: any (All (a) (-> (-> a Boolean) (Listof a) Boolean)))
 (define (any p? l)
@@ -48,3 +49,11 @@
     (match l
         (`((,h1 . ,h2) . ,t) (if (equal? x h1) h2  (lookup x t)))
         ('() #f)))
+
+(: justs (All (a) (-> (Listof (Option a)) (Listof a))))
+(define (justs l)
+  (match l
+    ('() '())
+    (`(,h . ,t) (if (equal? h #f)
+                    (justs t)
+                    (cons h (justs t))))))

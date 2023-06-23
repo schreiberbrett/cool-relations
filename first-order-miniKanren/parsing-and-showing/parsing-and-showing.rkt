@@ -27,7 +27,7 @@
   (match x
     (`(conde . ,exps*) (Conde (parse-exps* exps*)))
     (`(fresh . (,vars . ,exps)) (Fresh (parse-symbols vars) (parse-exps exps)))
-    (`(,rel . ,args) `(,(parse-symbol rel) . (parse-sexps ,args)))))
+    (`(,rel . ,args) (Relation (parse-symbol rel) (parse-sexps args)))))
 
 (: parse-exps (-> Sexp (Listof MKexp)))
 (define (parse-exps x)
@@ -58,7 +58,7 @@
   (match x
     ((Conde exps*) `(conde . ,exps*))
     ((Fresh vars exps) `(fresh ,vars . ,exps))
-    (`(,rel . ,args) '(,rel . ,args))))
+    ((Relation name args) '(,name . ,args))))
 
 (: show-ednf (-> EDNF Any))
 (define (show-ednf x)

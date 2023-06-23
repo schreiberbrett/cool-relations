@@ -108,3 +108,7 @@ Converting an unstructured miniKanren expression into an EDNF can be computation
 ```
 
 The equivalent Racket functions `conjunction` and `disjunction` are associative. Their associative equivalents operate on lists and are named `conjunction*` and `disjunction*`.
+
+
+# Simple Conjunctions
+A simple conjunction in an EDNF is 

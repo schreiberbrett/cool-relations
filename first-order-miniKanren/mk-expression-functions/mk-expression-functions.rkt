@@ -3,15 +3,16 @@
 (require "../s-expression-functions/s-expression-functions.rkt")
 (require "../misc/misc.rkt")
 
-(provide replace-in-exp MKexp Fresh Conde)
+(provide replace-in-exp MKexp Fresh Conde Relation)
 
 (struct Fresh ([vars : (Listof Symbol)] [exps : (Listof MKexp)]))
 (struct Conde ([exps* : (Listof (Listof MKexp))]))
+(struct Relation ([name : Symbol] [args : (Listof Sexp)]))
 
 (define-type MKexp
   (U Fresh
      Conde
-     (Pairof Symbol (Listof Sexp))))
+     Relation))
 
 (: replace-in-exp (-> (Listof (Pairof Symbol Sexp)) MKexp MKexp))
 (define (replace-in-exp replacements exp)
@@ -23,5 +24,5 @@
      (let ((gensyms (map (lambda (var) (gensym)) vars)))
        (Fresh gensyms (map (lambda ([exp : MKexp]) (replace-in-exp (append (zip vars gensyms) replacements) exp)) exps))))
 
-    (`(,rel . ,args) `(,rel . ,(map (lambda ([arg : Sexp])
-                                      (replace-in-sexp replacements arg)) args)))))
+    ((Relation name args) (Relation name (map (lambda ([arg : Sexp])
+                                                (replace-in-sexp replacements arg)) args)))))
