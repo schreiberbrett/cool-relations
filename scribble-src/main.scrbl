@@ -192,6 +192,29 @@ Suppose we have defined a binary relation @racket[(reverseo a b)] where @racket[
                         (nonempty-riffleo* t rec)))))]
 
 
+@section{List Length}
+@chunk[<lengtho>
+       (defrel (lengtho l n)
+         (conde ((== n '()) (== l '()))
+                ((fresh (h t lrec lrec*2 x)
+                        (== n `(,h . ,t))
+
+                        (conde ((== h 0)
+                                (== l lrec*2)
+                                (fresh (a d) (== t `(,a . ,d))))
+
+                               ((== h 1)
+                                (== l `(,x . ,lrec*2))))
+
+                        (double-lengtho lrec lrec*2)
+                        (lengtho lrec t)))))
+
+       (defrel (double-lengtho l l*2)
+         (conde ((== l '()) (== l*2 '()))
+                ((fresh (h h1 h2 t t*2)
+                        (== l `(,h . ,t))
+                        (== l*2 `(,h1 ,h2 . ,t*2))
+                        (double-lengtho t t*2)))))]
 
 @section{Smaller relations}
 @chunk[<smaller-relations>
@@ -1070,6 +1093,38 @@ This made me realize a flaw in the representation: there is nothing constraining
        <relational-unary-natmaps>
        <relational-natmaps-merge>]
 
+@section{Prime factor encoding}
+@chunk[<prime-factor-encoding>
+       <naturalo>
+       <natlisto>
+       <godel-encodingo>]
+
+@chunk[<naturalo>
+       (defrel (naturalo n)
+         (conde
+          ((== n '()))
+          ((fresh (h t)
+                  (== n `(,h . ,t))
+                  (conde
+                   ((== h 0) (fresh (a d) (== t `(,a . ,d))))
+                   ((== h 1)))
+                  (naturalo t)))))]
+
+@chunk[<natlisto>
+       (defrel (natlisto l)
+         (conde
+          ((== l '()))
+          ((fresh (h t)
+                  (== l `(,h . ,t))
+                  (naturalo h)
+                  (natlisto t)))))]
+
+@chunk[<godel-encodingo>
+       (defrel (godel-encodingo l)
+         (fresh (a b t)
+                (== l `((,a . ,b) . ,t))
+                (natlisto l)))]
+
 @section{Putting it all together}
 
 Putting it all together
@@ -1091,6 +1146,7 @@ Putting it all together
        <context-freeo>
        <hajoso>
        <evalo>
+       <lengtho>
        <post-correspondenceo>
        <color-=/=>
        <three-colorableo>
@@ -1101,6 +1157,7 @@ Putting it all together
        <relational-natmaps>
        <misc-definitions>
        <actor-association-game>
+       <prime-factor-encoding>
        <scratch-area>]
 
 @section{Appendix}

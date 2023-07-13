@@ -1,8 +1,9 @@
 #lang racket
 
 (include "../../CodeFromTheReasonedSchemer2ndEd/trs2-impl.scm")
+(require "stream.rkt")
 
-(provide ==-inf count-up-inf map-inf filter-inf)
+(provide ==-inf)
 
 ;; Dangerous goal only to be used in lies
 ;; Takes a variable and a (potentially infinite) stream of ground values.
@@ -16,25 +17,16 @@
 
       (else (lambda () ((==-inf v (s-inf)) s))))))
 
-(define (count-up-inf n)
-  (cons n (lambda () (count-up-inf (+ 1 n)))))
 
-;; map and filter inspired by the -inf functions in trs2-impl.scm.
-(define (map-inf f s-inf)
-  (cond
-    ((null? s-inf) '())
-    ((pair? s-inf) (cons
-                    (f (car s-inf))
-                    (map-inf f (cdr s-inf))))
-
-    (else (lambda ()
-            (map-inf f (s-inf))))))
-
-(define (filter-inf p? s-inf)
-  (cond
-    ((null? s-inf) '())
-    ((pair? s-inf) (if (p? (car s-inf))
-                       (cons (car s-inf) (filter-inf p? (cdr s-inf)))
-                       (filter-inf p? (cdr s-inf))))
-
-    (else (lambda () (filter-inf p? (s-inf))))))
+;; set-and-predicate-relation : constructor for relations
+;; Given a stream of all elements from the set, and a predicate that all elements must obey, define a miniKanren relation.
+;; Do not pass in incomplete streams, that would make miniKanren incomplete!
+(define (setpredo set predicate?)
+  (lambda (x)
+    (lambda (s)
+      (let ((x (walk x s)))
+        (lambda ()
+          (cond
+            ((predicate? x) (succeed s))
+            ((var? x) ((==-inf x set-inf) s))
+            (else (fail s))))))))

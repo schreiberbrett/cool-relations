@@ -1,26 +1,16 @@
 #lang racket
 
-(include "../../CodeFromTheReasonedSchemer2ndEd/trs2-impl.scm")
-(require "util.rkt")
-
-(provide primeo prime-factorso)
-
-(define (primeo n)
-  (lambda (s)
-    (let ((n (walk n s)))
-      (lambda ()
-        (cond
-          ((and (number? n) (prime? n)) (succeed s))
-          ((var? n) ((==-inf n primes-inf) s))
-          (else (fail s)))))))
+(require "stream.rkt")
+(require racket/trace)
+(provide prime? primes-inf prime-factors)
 
 ;; Adapted from Graham Hutton's lazy Haskell implementation.
 ;; Demonstrated on Computerphile: https://www.youtube.com/watch?v=bnRNiE_OVWA
 (define (sieve ns)
   (cond
-    ((pair? ns) (cons (car ns) (sieve (filter-inf (lambda (x) (not (zero? (modulo x (car ns))))) (cdr ns)))))
+    ((pair? ns)
+     (cons (car ns) (sieve (filter-inf (lambda (x) (not (zero? (modulo x (car ns))))) (cdr ns)))))
     (else (lambda () (sieve (ns))))))
-
 
 (define primes-inf (sieve (count-up-inf 2)))
 
@@ -42,38 +32,30 @@
 
 ;; -- Prime factorization --
 
-(define (sorted-prime-factors n)
-  (sorted-prime-factors-helper n primes-inf))
+(define (prime-factors n)
+  (prime-factors-helper n (prime-sieve-to n)))
 
-(define (sorted-prime-factors-helper n primes-left)
+(define (prime-factors-helper n primes-left)
   (cond
-    ((pair? primes-left) (let ((p (car primes-left)))
-                           (cond
-                             ((> p n) '())
-                             ((zero? (modulo n p)) (cons p (sorted-prime-factors-helper (/ n p) primes-left)))
-                             (else (sorted-prime-factors-helper n (cdr primes-left))))))
+    ((or (null? primes-left) (< n 2)) '())
+    ((zero? (modulo n (car primes-left)))
+     (cons (car primes-left)
+           (prime-factors-helper (/ n (car primes-left))
+                                 primes-left)))
+    (else (prime-factors-helper n (cdr primes-left)))))
 
-    (else (sorted-prime-factors-helper n (primes-left)))))
-
-
-(defrel (prime-factorso n factors)
-  (==-inf `(,n . ,factors) (map-inf (lambda (x)
-                                      `(,x . ,(sorted-prime-factors x))) (count-up-inf 2))))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+;; https://stackoverflow.com/a/16629458/20284526
+(define (prime-sieve-to n)
+  (let* ((sz (quotient n 2)) (sv (make-vector sz 1)) (lm (integer-sqrt n)))
+    (for ((i (in-range 1 lm))) 
+      (cond ((vector-ref sv i)
+             (let ((v (+ 1 (* 2 i))))
+               (for ((i (in-range (+ i (* v (/ (- v 1) 2))) sz v)))
+                 (vector-set! sv i 0))))))
+    (cons 2
+          (for/list ((i (in-range 1 sz)) 
+                     #:when (and (> (vector-ref sv i) 0) (> i 0)))
+            (+ 1 (* 2 i))))))
 
 
 

@@ -1,45 +1,9 @@
 #lang racket
 
-(include "../../CodeFromTheReasonedSchemer2ndEd/trs2-impl.scm")
-(require "util.rkt")
+(include "../../CodeFromTheReasonedSchemer2ndEd/trs2-impl.scm") ; for append-map-inf
+(require "stream.rkt")
 
-(provide naturalo eveno oddo integero)
-
-(define (naturalo n)
-  (lambda (s)
-    (let ((n (walk n s)))
-      (lambda ()
-        (cond
-          ((exact-nonnegative-integer? n) (succeed s))
-          ((var? n) ((==-inf n naturals-inf) s))
-          (else (fail s)))))))
-
-(define (eveno n)
-  (lambda (s)
-    (let ((n (walk n s)))
-      (lambda ()
-        (cond
-          ((and (number? n) (even? n)) (succeed s))
-          ((var? n) ((==-inf n evens-inf) s))
-          (else (fail s)))))))
-
-(define (oddo n)
-  (lambda (s)
-    (let ((n (walk n s)))
-      (lambda ()
-        (cond
-          ((and (number? n) (even? n)) (succeed s))
-          ((var? n) ((==-inf n odds-inf) s))
-          (else (fail s)))))))
-
-(define (integero n)
-  (lambda (s)
-    (let ((n (walk n s)))
-      (lambda ()
-        (cond
-          ((exact-integer? n) (succeed s))
-          ((var? n) ((==-inf n integers-inf) s))
-          (else (fail s)))))))
+(provide naturals-inf evens-inf odds-inf integers-inf)
 
 (define naturals-inf (count-up-inf 0))
 
