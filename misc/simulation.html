@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Canvas with Moving Circles</title>
+</head>
+<body>
+  <canvas id="myCanvas" width="1200" height="800"></canvas>
+
+  <script>
+    const canvas = document.getElementById("myCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const numCircles = 300;
+    const circleRadius = 1;
+    const circleVelocity = 1;
+    const timeStep = 50; // Time step in milliseconds (adjust this to change the animation speed)
+
+    let circles = [];
+    let redCircle;
+
+    // Function to create a circle with random angle
+    function createCircle() {
+      return {
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        angle: Math.random() * Math.PI * 2,
+      };
+    }
+
+    // Function to update circle positions and angles
+    function updateCircles() {
+      // Move the red circle randomly
+      redCircle.angle = Math.random() * Math.PI * 2;
+      redCircle.x += Math.cos(redCircle.angle) * circleVelocity;
+      redCircle.y += Math.sin(redCircle.angle) * circleVelocity;
+
+      // Update other circles to point towards the red circle
+      for (let circle of circles) {
+        circle.angle = Math.atan2(redCircle.y - circle.y, redCircle.x - circle.x);
+        circle.x += Math.cos(circle.angle) * circleVelocity;
+        circle.y += Math.sin(circle.angle) * circleVelocity;
+      }
+
+      drawCircles();
+    }
+
+    // Function to draw circles on the canvas
+    function drawCircles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw the red circle
+      ctx.beginPath();
+      ctx.arc(redCircle.x, redCircle.y, circleRadius, 0, Math.PI * 2);
+      ctx.fillStyle = "red";
+      ctx.fill();
+      ctx.closePath();
+
+      // Draw the other circles
+      for (let circle of circles) {
+        ctx.beginPath();
+        ctx.arc(circle.x, circle.y, circleRadius, 0, Math.PI * 2);
+        ctx.fillStyle = "black";
+        ctx.fill();
+        ctx.closePath();
+      }
+    }
+
+    // Initialize circles with random positions and angles
+    for (let i = 0; i < numCircles; i++) {
+      circles.push(createCircle());
+    }
+
+    // Choose a random circle to be the red circle
+    redCircle = circles[Math.floor(Math.random() * circles.length)];
+
+    // Start the animation loop
+    setInterval(updateCircles, timeStep);
+
+  </script>
+</body>
+</html>

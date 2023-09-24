@@ -19,6 +19,7 @@ scribble-htmls:
 literate-htmls:
 	cd literate-src && \
 	lit --weave book.lit && \
+	rm -rf ../literate-htmls && \
 	mv _book ../literate-htmls
 
 literate-code:

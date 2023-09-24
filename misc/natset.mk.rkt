@@ -7,6 +7,7 @@
 (require pict/tree-layout)
 (require pict/code)
 
+(provide entryo)
 
 (defrel (pairo x)
   (fresh (h t) (== x `(,h . ,t))))
@@ -19,7 +20,7 @@
                                         (NatMap a)
                                         (NatMap a))))
 
-#;(: entry (All (a) (<-> Nat a (NatMap a))))
+#;(: entryo (All (a) (<-> Nat a (NatMap a))))
 (defrel (entryo k v m)
   (fresh (l r val rec other h t)
          (conde ((== k '()) (== m `(,v ,l ,r)))
