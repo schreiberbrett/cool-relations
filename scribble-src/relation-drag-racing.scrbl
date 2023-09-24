@@ -58,15 +58,15 @@ A base-10 number is divisible by 3 if the sum of its digits is divisible by 3. A
 
 For example, @racket['(1 1 0 1 0 0 0 0 1)] is divisible by 3 as demonstrated in the below picture.
 
-@image["../img/divisibility-of-267.png"]
+@image["img/divisibility-of-267.png"]
 
 Since this is a congruence mod 3, there are only a finite number of states to consider while adding up the odd- and even-indexed bits. At any point while scanning through the list of bits: 0 mod 3, 1 mod 3, and 2 mod 3. By considering these 3 possibilities, while also keeping track of whether the next bit is at an odd or even index, one can establish @($ "3 * 2 = 6") pairs of states such that, if the list is exhausted while on a 0 mod 3 state, the number is divisible by 3. Below is a deterministic finite automaton (DFA) which encodes this algorithm.
 
-@image["../img/divisibility-by-3-dfa-unminimized.png"]
+@image["img/divisibility-by-3-dfa-unminimized.png"]
 
 While this DFA is correct, it can be minimized. I used an online tool at @url{https://aswaddev.github.io/dfa-minimizer/} to produce a DFA with only 3 states:
 
-@image["../img/divisibility-by-3-dfa-minimized.png"]
+@image["img/divisibility-by-3-dfa-minimized.png"]
 
 Converting a DFA into a miniKanren relation is straightforward: proceed recursively through the list while maintaining a state (here represented as a symbol), and only accept an empty list if the current state is an accepting state. The translation from DFA to miniKanren clauses is mostly direct with one exception: encountering a 0 requires the tail of the list to be nonempty (a pair instead of the empty list), since Oleg numerals cannot end in 0.
 
@@ -153,7 +153,7 @@ The @racket[(void)] call is a simple way to suppress the output of @racket[(run 
 
 @section{Ready, set, go!}
 
-@image["../img/divisibility-by-3-all-results.png"]
+@image["img/divisibility-by-3-all-results.png"]
 
 @tabular[#:sep @hspace[1]
          (list (list @racket[n] @racket[3n] @racket[dfa] @racket[enum] @racket[n3])
@@ -170,7 +170,7 @@ The @racket[(void)] call is a simple way to suppress the output of @racket[(run 
 
 Continuing on without @racket[3n] for higher values of @racket[n].
 
-@image["../img/divisibility-by-3-narrowed-results.png"]
+@image["img/divisibility-by-3-narrowed-results.png"]
 
 @tabular[#:sep @hspace[1]
          (list (list @racket[n] @racket[3n] @racket[dfa] @racket[enum])
@@ -187,7 +187,7 @@ Here is the code template for the next drag race. Here we just want to find one 
 
 @racketblock[(time (run 1 q (multiple-of-3o-enum (build-num x))))]
 
-@image["../img/divisibility-by-3-all-ground.png"]
+@image["img/divisibility-by-3-all-ground.png"]
 
 @tabular[#:sep @hspace[1]
          (list (list @racket[x] @racket[3n] @racket[dfa] @racket[enum] @racket[n3])
@@ -198,7 +198,7 @@ Here is the code template for the next drag race. Here we just want to find one 
 
 @racket[n3] is doing even worse now at recognizing than it was at generating. Continuing without @racket[n3]:
 
-@image["../img/divisibility-by-3-narrowed-ground.png"]
+@image["img/divisibility-by-3-narrowed-ground.png"]
 
 @tabular[#:sep @hspace[1]
          (list (list @racket[x] @racket[3n] @racket[dfa] @racket[enum])
