@@ -3,7 +3,7 @@
 @(require scribble-math)
 @(require scribble-math/dollar)
 
-@title[#:date "2023-09-25"]{Relation Drag Racing}
+@title[#:date "2023-09-25"]{miniKanren Drag Racing}
 @author{Brett Schreiber}
 
 This article documents my attempts at writing a relation in miniKanren which asserts for a given @racket[x]:
