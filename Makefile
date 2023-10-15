@@ -10,24 +10,32 @@ bezae-code = \
 	bezae-code/main.c \
 	bezae-code/main.scm
 
+literate-html = \
+	literate-articles/associative-cartesian-product/associative-cartesian-product.html \
+	literate-articles/rational-numbers/rational-numbers.html
+
+literate-code = \
+	literate-articles/associative-cartesian-product/associative-cartesian-product.py \
+	literate-articles/rational-numbers/rational-numbers.c
+
 .PHONY: all
 all: scribble-htmls literate-htmls literate-code $(bezae-code)
 
 scribble-htmls:
-	scribble --dest-name scribble-htmls --htmls scribble-src/main.scrbl
+	scribble --dest scribble-htmls scribble-src/*.scrbl
 
-literate-htmls:
-	cd literate-src && \
-	lit --weave book.lit && \
-	rm -rf ../literate-htmls && \
-	mv _book ../literate-htmls
+literate-articles/rational-numbers.html: literate-articles/rational-numbers.lit
+	lit --weave literate-articles/rational-numbers/rational-numbers.lit --out-dir literate-articles/rational-numbers/
 
-literate-code:
-	mkdir -p literate-code && \
-	cp literate-src/*.lit literate-code/ && \
-	cd literate-code && \
-	lit --tangle *.lit && \
-	rm *.lit
+ literate-articles/rational-numbers.c: literate-articles/rational-numbers/rational-numbers.lit
+	lit --tangle literate-articles/rational-numbers/rational-numbers.lit --out-dir literate-articles/rational-numbers/
+
+literate-articles/associative-cartesian-product/associative-cartesion-product.html: literate-articles/associative-cartesian-product.lit
+	lit --weave literate-articles/associative-cartesian-product/associative-cartesian-product.lit --out-dir literate-articles/associative-cartesian-product/
+
+literate-articles/associative-cartesian-product/associative-cartesian-product.py: literate-articles/associative-cartesian-product.lit
+	lit --tangle literate-articles/associative-cartesian-product/associative-cartesian-product.lit --out-dir literate-articles/associative-cartesian-product/
+
 
 $(bezae-code): bezae/bezae.html bezae/bezae-compiler.py
 	python3 bezae/bezae-compiler.py
@@ -35,5 +43,6 @@ $(bezae-code): bezae/bezae.html bezae/bezae-compiler.py
 
 .PHONY: clean
 clean:
-	rm -rf scribble-htmls literate-htmls literate-code
+	rm $(literate-code)
+	rm $(literate-html)
 	rm $(bezae-code)
