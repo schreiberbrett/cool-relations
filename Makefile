@@ -11,31 +11,33 @@ bezae-code = \
 	bezae-code/main.scm
 
 literate-html = \
-	literate-articles/associative-cartesian-product/associative-cartesian-product.html \
-	literate-articles/rational-numbers/rational-numbers.html
+	literate-articles/associative-cartesian-product.html \
+	literate-articles/rational-numbers.html
 
 literate-code = \
-	literate-articles/associative-cartesian-product/associative-cartesian-product.py \
-	literate-articles/rational-numbers/rational-numbers.c
+	literate-articles/associative-cartesian-product.py \
+	literate-articles/rational-numbers.c
+
+scribble-html = \
+	scribble-htmls/main.html \
+	scribble-htmls/miniKanren-and-multivariate-horner-schemes.html \
+	scribble-htmls/relation-drag-racing.html \
+	scribble-htmls/sets-in-miniKanren.html
 
 .PHONY: all
-all: scribble-htmls literate-htmls literate-code $(bezae-code)
+all: $(scribble-html) $(literate-html) $(literate-code) $(bezae-code)
 
-scribble-htmls:
-	scribble --dest scribble-htmls scribble-src/*.scrbl
+scribble-htmls/%.html: scribble-src/%.scrbl
+	scribble --dest scribble-htmls $<
 
-literate-articles/rational-numbers.html: literate-articles/rational-numbers.lit
-	lit --weave literate-articles/rational-numbers/rational-numbers.lit --out-dir literate-articles/rational-numbers/
+literate-articles/%.py: literate-articles/%.lit
+	lit --tangle $<
 
- literate-articles/rational-numbers.c: literate-articles/rational-numbers/rational-numbers.lit
-	lit --tangle literate-articles/rational-numbers/rational-numbers.lit --out-dir literate-articles/rational-numbers/
+literate-articles/%.c: literate-articles/%.lit
+	lit --tangle $<
 
-literate-articles/associative-cartesian-product/associative-cartesion-product.html: literate-articles/associative-cartesian-product.lit
-	lit --weave literate-articles/associative-cartesian-product/associative-cartesian-product.lit --out-dir literate-articles/associative-cartesian-product/
-
-literate-articles/associative-cartesian-product/associative-cartesian-product.py: literate-articles/associative-cartesian-product.lit
-	lit --tangle literate-articles/associative-cartesian-product/associative-cartesian-product.lit --out-dir literate-articles/associative-cartesian-product/
-
+literate-articles/%.html: literate-articles/%.lit
+	lit --weave $<
 
 $(bezae-code): bezae/bezae.html bezae/bezae-compiler.py
 	python3 bezae/bezae-compiler.py
@@ -43,6 +45,7 @@ $(bezae-code): bezae/bezae.html bezae/bezae-compiler.py
 
 .PHONY: clean
 clean:
-	rm $(literate-code)
-	rm $(literate-html)
-	rm $(bezae-code)
+	rm -f $(scribble-html)
+	rm -f $(literate-code)
+	rm -f $(literate-html)
+	rm -f $(bezae-code)

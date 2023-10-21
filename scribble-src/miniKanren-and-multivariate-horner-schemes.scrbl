@@ -6,6 +6,16 @@
 @title[#:date "2023-09-26"]{miniKanren and Multivariate Horner Schemes}
 @author{Brett Schreiber}
 
+@bold{Bill chops doors in inns.} This is a nonsense sentence, but it has the interesting property that all its words are in dictionary order, and all the letters within each word are in alphabetical order. So it is possible to compress the sentence into a smaller representation by treating the sentence like a sum of products and factoring out common variables:
+
+@($$ "bill + chops + doors + in + inns = i(bll + n(1 + ns)) + os(chp + dor)")
+
+There is a second way to factor out common variables:
+
+@($$ "= i(bll + n) + s(o(chp + dor) + inn)")
+
+
+
 @url{https://scholarworks.utep.edu/cgi/viewcontent.cgi?article=1402&context=cs_techrep}
 
 @($$ "f(x_1, \\ldots, x_n) = \\sum_k M_k")

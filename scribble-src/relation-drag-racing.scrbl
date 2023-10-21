@@ -153,33 +153,26 @@ The @racket[(void)] call is a simple way to suppress the output of @racket[(run 
 
 @section{Ready, set, go!}
 
-@image["img/divisibility-by-3-all-results.png"]
+@image["img/divisibility-by-3-generate.png"]
 
 @tabular[#:sep @hspace[1]
-         (list (list @racket[n] @racket[3n] @racket[dfa] @racket[enum] @racket[n3])
-               (list "250"      "76"        "8"          "0"           "889")
-               (list "500"      "168"       "112"        "0"           "3790")
-               (list "750"      "410"       "59"         "0"           "8309")
-               (list "1000"     "468"       "54"         "1"           "18165")
-               (list "1250"     "1033"      "68"         "1"           "22868")
-               (list "1500"     "1042"      "123"        "1"           "31357")
-               (list "1750"     "1036"      "136"        "3"           "42626")
-               (list "2000"     "1153"      "130"        "3"           "58484"))]
+         (list (list @racket[n] @racket[3n] @racket[n3] @racket[dfa] @racket[enum])
+               (list "250"      "76"        "889"        "8"          "0")
+               (list "500"      "168"       "3790"       "112"        "0")
+               (list "750"      "410"       "8309"       "59"         "0")
+               (list "1000"     "468"       "18165"      "54"         "1")
+               (list "1250"     "1033"      "22868"      "68"         "1")
+               (list "1500"     "1042"      "31357"      "123"        "1")
+               (list "1750"     "1036"      "42626"      "136"        "3")
+               (list "2000"     "1153"      "58484"      "130"        "3")
+               (list "5000"     "8342"      "-"          "383"        "8")
+               (list "10000"    "14033"     "-"          "1040"       "20")
+               (list "15000"    "15919"     "-"          "1858"       "27")
+               (list "20000"    "33743"     "-"          "2023"       "38")
+               (list "25000"    "35274"     "-"          "5149"       "58")
+               (list "30000"    "37538"     "-"          "5314"       "85"))]
 
-@racket[3n] is doing horribly. What takes @racket[enum] a handful of miliseconds takes nearly a minute for @racket[3n]. I'll have to stop measuring @racket[3n] for higher values if I want to see real differences between the other 3 implementations. One easy takeaway is that if you're comfortable doing a divisibility against a constant value by using the existential approach with @racket[*o], make sure the constant is the first value, not the second! It makes a huge difference.
-
-Continuing on without @racket[3n] for higher values of @racket[n].
-
-@image["img/divisibility-by-3-narrowed-results.png"]
-
-@tabular[#:sep @hspace[1]
-         (list (list @racket[n] @racket[3n] @racket[dfa] @racket[enum])
-               (list "5000"     "8342"      "383"        "8")
-               (list "10000"    "14033"     "1040"       "20")
-               (list "15000"    "15919"     "1858"       "27")
-               (list "20000"    "33743"     "2023"       "38")
-               (list "25000"    "35274"     "5149"       "58")
-               (list "30000"    "37538"     "5314"       "85"))]
+I stopped measuring @racket[n3] early on because it was doing horribly. What takes @racket[enum] a handful of miliseconds takes nearly a minute for @racket[n3]. Omitting @racket[n3] for higher inputs allows seeing real differences among the other 3 implementations. One easy takeaway is that if you're comfortable doing a divisibility against a constant value by using the existential approach with @racket[*o], make sure the constant is the first value, not the second! It makes a huge difference.
 
 So it looks like enum is the best choice, but that's only for generating values from a fresh variable. What if you want to use the relation to test if an already-fully-ground value is divisible by 3?
 
@@ -187,25 +180,17 @@ Here is the code template for the next drag race. Here we just want to find one 
 
 @racketblock[(time (run 1 q (multiple-of-3o-enum (build-num x))))]
 
-@image["img/divisibility-by-3-all-ground.png"]
+@image["img/divisibility-by-3-test.png"]
 
 @tabular[#:sep @hspace[1]
-         (list (list @racket[x] @racket[3n] @racket[dfa] @racket[enum] @racket[n3])
-               (list "9"        "0"         "0"          "0"           "1")
-               (list "99"       "0"         "0"          "0"           "7")
-               (list "999"      "1"         "0"          "0"           "775")
-               (list "9999"     "2"         "0"          "1"           "82604"))]
-
-@racket[n3] is doing even worse now at recognizing than it was at generating. Continuing without @racket[n3]:
-
-@image["img/divisibility-by-3-narrowed-ground.png"]
-
-@tabular[#:sep @hspace[1]
-         (list (list @racket[x] @racket[3n] @racket[dfa] @racket[enum])
-               (list "99999"    "4"         "0"          "18")
-               (list "999999"   "10"        "0"          "163")
-               (list "9999999"  "14"        "0"          "2329")
-               (list "99999999" "23"        "0"          "26567"))]
-
+         (list (list @racket[10ⁿ−1] @racket[3n] @racket[n3] @racket[dfa] @racket[enum])
+               (list "1"            "0"         "1"         "0"          "0")
+               (list "2"            "0"         "7"         "0"          "0")
+               (list "3"            "1"         "775"       "0"          "0")
+               (list "4"            "2"         "82604"     "0"          "1")
+               (list "5"            "4"         "-"         "0"          "18")
+               (list "6"            "10"        "-"         "0"          "163")
+               (list "7"            "14"        "-"         "0"          "2329")
+               (list "8"            "23"        "-"         "0"          "26567"))]
 
 But now at higher values of @racket[x], @racket[enum] starts to do badly! That is becasue it fully enumerates every multiple of 3 in order, and there are many, many multiples of 3 that come before 99999999. @racket[dfa] remains speedy because it actually explores the Oleg number it is given, so its runtime depends only on the bitlength of the Oleg number rather than the value, which can be up to @($ "2^n") for some bitlength @($ "n"). @racket[3n] also seems to be faring fine, which surprised me.
