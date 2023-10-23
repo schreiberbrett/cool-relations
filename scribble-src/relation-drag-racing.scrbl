@@ -12,10 +12,9 @@ This article documents my attempts at writing a relation in miniKanren which ass
  @item{@racket[x] is a multiple of 3. In other words, there exists some natural number @($ "n") such that @($ "x = 3n")}]
 
 There are multiple ways to write this relation in miniKanren. In this article I will explore 4 candidate relation definitions and compare them in the following @bold{drag races}:
-@itemlist[
+@itemlist[#:style 'ordered
  @item{Which relation can most quickly output the first 10000 multiples of 3?}
- @item{Which relation can most quickly recognize 999999999 as being a multiple of 3?}
- @item{Which relation can most quickly recognize 1000000000 as @bold{not} being a multiple of 3?}]
+ @item{Which relation can most quickly recognize 999999999 as being a multiple of 3?}]
 
 An Oleg number is a list of bits whose least significant digit comes first, and whose last digit cannot be @racket[0]. For example, @racket['(0 0 1)] is an Oleg number representing @racket[4]. TRS2 defines the function @racket[build-num] for converting a base ten number into an Oleg number. Below is the reverse definition, converting an Oleg number back into base ten: @margin-note{All code in this article was executed using the miniKanren implementation from @code{TRS2}, but @code{faster-miniKanren} could also be used.}
 
