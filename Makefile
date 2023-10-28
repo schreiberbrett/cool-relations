@@ -22,7 +22,8 @@ scribble-html = \
 	scribble-htmls/main.html \
 	scribble-htmls/miniKanren-and-multivariate-horner-schemes.html \
 	scribble-htmls/relation-drag-racing.html \
-	scribble-htmls/sets-in-miniKanren.html
+	scribble-htmls/sets-in-miniKanren.html \
+	scribble-htmls/the-cartesian-product-in-miniKanren.html
 
 .PHONY: all
 all: $(scribble-html) $(literate-html) $(literate-code) $(bezae-code)
