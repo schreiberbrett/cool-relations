@@ -17,18 +17,17 @@
 
 
 ;; This version of riffleo has only one recursive call, so it should diverge less. But I don't know exactly when.
-(defrel (riffleo l1 l2 lo)
-  (fresh (h1 t1 h2 t2 ho to z0 z1)
-         (conde ((== l1 '()) (== l2 '()) (== lo '()))
-                ((pairo l1) (== l2 '()) (== lo l1))
-                ((== l1 '()) (pairo l2) (== lo l2))
+(defrel (riffleo l₁ l₂ lₒ)
+  (fresh (a₁ d₁ a₂ d₂ aₒ dₒ)
+         (conde ((== l₁ '()) (== l₂ '()) (== lₒ '()))
+                
+                ((== l₁ `(,a₁ . ,d₁)) (== l₂ '()) (== lₒ l₁))
+                ((== l₁ '()) (== l₂ `(,a₂ . ,d₂)) (== lₒ l₂))
 
-                ((== l1 `(,h1 . ,t1))
-                 (== l2 `(,h2 . ,t2))
-                 (== lo `(,ho . ,to))
-
-                 ;; Avoid an extra recursive call by introducing z0 and z1
-                 (conde ((== ho h1) (== z0 t1) (== z1 l2))
-                        ((== ho h2) (== z0 l1) (== z1 t2)))
-                   
-                 (riffleo z0 z1 to)))))
+                ((== l₁ `(,a₁ . ,d₁))
+                 (== l₂ `(,a₂ . ,d₂))
+                 (== lₒ `(,aₒ . ,dₒ))
+                 (fresh (α₁ α₂ α₃)
+                        (conde ((== aₒ a₁) (== `(,α₁ ,α₂ ,α₃) `(,d₁ ,l₂ ,dₒ)))
+                               ((== aₒ a₂) (== `(,α₁ ,α₂ ,α₃) `(,l₁ ,d₂ ,dₒ))))
+                        (riffleo α₁ α₂ α₃))))))
