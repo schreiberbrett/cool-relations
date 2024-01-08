@@ -24,7 +24,10 @@ scribble-html = \
 	scribble-htmls/relation-drag-racing.html \
 	scribble-htmls/sets-in-miniKanren.html \
 	scribble-htmls/the-cartesian-product-in-miniKanren.html \
-	scribble-htmls/the-majority-relation.html
+	scribble-htmls/the-majority-relation.html \
+	scribble-htmls/length.html \
+	scribble-htmls/conde-with-two-recursive-calls.html \
+	scribble-htmls/minimize-recursive-calls.html
 
 .PHONY: all
 all: $(scribble-html) $(literate-html) $(literate-code) $(bezae-code)

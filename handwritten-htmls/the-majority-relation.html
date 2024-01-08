@@ -1,0 +1,132 @@
+<html>
+<head>
+<title>The Majority Relation</title>
+<link
+    href="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/themes/prism.min.css"
+    rel="stylesheet"
+/>
+<style>
+article {
+    margin-left: 20%;
+    margin-right: 20%;
+    margin-top: 2%;
+    margin-bottom: 2%;
+}
+
+code {
+    white-space: nowrap;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+</style>
+
+<!-- MathJax 3.0 -->
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+<article>
+<h1>The Majority Relation</h1>
+
+<p>
+Consider the list <code>'(a b a c a)</code>. Here, <code>'a</code> is the majority element. Now consider the list <code>'(x x y z)</code>. Although <code>'x</code> is the most frequent element, it is not the majority. So a list may only have one majority element, if any.
+</p>
+
+<p>
+Let's define a relation, <code>majorityo</code> in miniKanren. It takes an element <code>e</code> and a list <code>l</code> and asserts that <code>e</code> is the majority element in <code>l</code>. For example, the following miniKanren statement should always succeed: <code>(majorityo 'x '(a x b x a x x c x))</code>. I always like to start by drawing a picture and adding annotations:
+</p>
+
+<img src="majority.svg">
+
+<p>
+A few takeaways:
+
+<ol>
+    <li>
+        <code>l</code> can be described as a disjoint union, or riffle, of two lists <code>l₁</code> and <code>l₂</code>.
+    </li>
+    <li>
+        <code>l₁</code> is longer than <code>l₂</code>.
+    </li>
+    <li>
+        <code>l₁</code> consists entirely of <code>e</code>s. It is <code>e</code> repeated.
+    </li>
+</ol>
+</p>
+
+<p>
+Here is a first attempt in miniKanren. This version is suffixed with <code>-naive</code>.
+
+<pre><code class="language-scheme">
+(defrel (majorityo-naive e l)
+  (fresh (l₁ l₂ l₁⊔l₂)
+         (== l  l₁⊔l₂)
+         (==* e l₁)
+         (longero l₁ l₂)
+         (riffleo l₁ l₂ l₁⊔l₂)))
+</code></pre>
+
+Corresponding helper relations:
+<pre><code class="language-scheme">
+(defrel (==* e l)
+  (conde ((== l '()))
+         ((fresh (d)
+              (== l `(,e . ,d))
+              (==* e d)))))
+
+(defrel (longero l₁ l₂)
+  (fresh (a₁ d₁ a₂ d₂)
+         (== l₁ `(,a₁ . ,d₁))
+         (conde ((== l₂ '()))
+                ((== l₂ `(,a₂ . ,d₂))
+                 (longero d₁ d₂)))))
+
+(defrel (riffleo l₁ l₂ l₁⊔l₂)
+  (fresh (a₁ d₁ a₂ d₂ d₁⊔l₂ l₁⊔d₂)
+         (conde ((== l₁ '()) (== l₂ '()) (== l₁⊔l₂ '()))
+   
+                ((== l₁ `(,a₁ . ,d₁)) (== l₂ '()) (== l₁⊔l₂ l₁))
+                ((== l₁ '()) (== l₂ `(,a₂ . ,d₂)) (== l₁⊔l₂ l₂))
+
+                ((== l₁ `(,a₁ . ,d₁))
+                 (== l₂ `(,a₂ . ,d₂))
+
+                 (fresh (α₁ α₂ α₃)
+                        (conde ((== l₁⊔l₂ `(,a₁ . ,d₁⊔l₂)) (== `(,α₁ ,α₂ ,α₃) `(,d₁ ,l₂ ,d₁⊔l₂)))
+                               ((== l₁⊔l₂ `(,a₂ . ,l₁⊔d₂)) (== `(,α₁ ,α₂ ,α₃) `(,l₁ ,d₂ ,l₁⊔d₂))))
+                        (riffleo α₁ α₂ α₃))))))
+</code></pre>
+
+<p>
+In the definition of <code>majorityo-naive</code>, <code>==*</code> and <code>longero</code> both recur on <code>l₁</code>. Together, they assert for each element <code>a₁</code> in <code>l₁</code>:
+<ul>
+    <li>There is a corresponding <code>a₂</code> in <code>l₂</code>, and
+    <li><code>a₁</code> is a copy of <code>e</code>.
+</ul>
+
+It is possible to construct a relation <code>==*-and-longero</code> which asserts the same facts, but only recurs through <code>l₁</code>  once.
+</p>
+
+<pre>
+(defrel (==*-and-longero e l₁ l₂)
+  (fresh (d₁ a₂ d₂)
+         (== l₁ `(,e . ,d₁))
+         (conde ((== l₂ '()))
+                ((== l₂ `(,a₂ . ,d₂))
+                 (==*-and-longero e d₁ d₂)))))
+</pre>
+
+</article>
+
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/prism.min.js"
+></script>
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/components/prism-scheme.min.js"
+></script>
+</body>
+</html>

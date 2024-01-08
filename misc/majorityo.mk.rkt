@@ -21,19 +21,19 @@
                 ((== l₂ `(,a₂ . ,d₂))
                  (longero d₁ d₂)))))
 
-(defrel (riffleo l₁ l₂ lₒ)
-  (fresh (a₁ d₁ a₂ d₂ aₒ dₒ)
-         (conde ((== l₁ '()) (== l₂ '()) (== lₒ '()))
+(defrel (riffleo l₁ l₂ l₁⊔l₂)
+  (fresh (a₁ d₁ a₂ d₂ d₁⊔l₂ l₁⊔d₂)
+         (conde ((== l₁ '()) (== l₂ '()) (== l₁⊔l₂ '()))
                 
-                ((== l₁ `(,a₁ . ,d₁)) (== l₂ '()) (== lₒ l₁))
-                ((== l₁ '()) (== l₂ `(,a₂ . ,d₂)) (== lₒ l₂))
+                ((== l₁ `(,a₁ . ,d₁)) (== l₂ '()) (== l₁⊔l₂ l₁))
+                ((== l₁ '()) (== l₂ `(,a₂ . ,d₂)) (== l₁⊔l₂ l₂))
 
                 ((== l₁ `(,a₁ . ,d₁))
                  (== l₂ `(,a₂ . ,d₂))
-                 (== lₒ `(,aₒ . ,dₒ))
+
                  (fresh (α₁ α₂ α₃)
-                        (conde ((== aₒ a₁) (== `(,α₁ ,α₂ ,α₃) `(,d₁ ,l₂ ,dₒ)))
-                               ((== aₒ a₂) (== `(,α₁ ,α₂ ,α₃) `(,l₁ ,d₂ ,dₒ))))
+                        (conde ((== l₁⊔l₂ `(,a₁ . ,d₁⊔l₂)) (== `(,α₁ ,α₂ ,α₃) `(,d₁ ,l₂ ,d₁⊔l₂)))
+                               ((== l₁⊔l₂ `(,a₂ . ,l₁⊔d₂)) (== `(,α₁ ,α₂ ,α₃) `(,l₁ ,d₂ ,l₁⊔d₂))))
                         (riffleo α₁ α₂ α₃))))))
 
 
@@ -91,3 +91,31 @@
 (defrel (majorityo5 x l)
   (fresh (majority rest)
          (ro x majority rest l)))
+
+(defrel (+1o x x+1)
+  (fresh (d)
+         (conde ((== x '()) (== x+1 '(+)))
+                ((== x `(+ . ,d)) (== x+1 `(+ + . ,d)))
+                ((== x `(- . ,d)) (== x+1 d)))))
+
+(defrel (margino x l m)
+  (conde ((== l '()) (== m '()))
+         ((fresh (a d rec)
+                 (== l `(,a . ,d))
+
+                 (conde ((== a x) (+1o rec m))
+                        ((+1o m rec)))
+                 
+                 (margino x d rec)))))
+
+
+(defrel (majorityo6 x l)
+  (fresh (m)
+         (conde ((== m '(+ +)))
+                ((== m '(+))))
+         (margino x l m)))
+
+(defrel (majorityo7 x l)
+  (fresh (m d)
+         (== m `(+ . ,d))
+         (margino x l m)))

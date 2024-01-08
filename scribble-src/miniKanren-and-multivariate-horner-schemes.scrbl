@@ -6,46 +6,29 @@
 @title[#:date "2023-09-26"]{miniKanren and Multivariate Horner Schemes}
 @author{Brett Schreiber}
 
+Suppose we had a multivariate polynomial that we wanted to optimize to use as few operations as possible. Here is an example which starts with 6 multiplications and 5 additions, gets transformed by a greedy algorithm, and ends with 2 multiplications and 5 additions.
 
-Suppose we had the following function that you wanted to evaluate on certain inputs.
+@tabular[#:sep @hspace[1]
+         (list (list @${x^2 + xy + xz + xw + yw + zw}
+                     "")
+               (list @${= x(x + y + z + w) + yw + zw}
+                     @elem{Factor out @${x} from 4 of the monomials.})
+               (list @${= x(x + y + z + w) + w(y + z)}
+                     @elem{Factor out @${w} from 2 of the monomials.}))]
 
-@($$ "f(x, y, z) = x^2yz + xy + y^2z + yz")
+This transformation results in a @bold{multivariate Horner scheme}. Although useful in reducing multiplications, multivariate Horner schemes are not optimal. Here is a different transformation which results in 1 multiplication and 3 additions.
 
-This type of function is called a multivariate polynomial, because it is a sum of products over multiple variables. Here is a version of @${f} with explicit multiplication.
+@tabular[#:sep @hspace[1]
+         (list (list @${x^2 + xy + xz + xw + yw + zw})
+               (list @${= (x + y + z)(x + w)}))]
 
-@$${f(x, y, z) = x*x*y*z + x*y + y*y*z + y*z}
+@section{The greedy algorithm}
+@hyperlink["https://scholarworks.utep.edu/cgi/viewcontent.cgi?article=1402&context=cs_techrep"]{Ceberio and Kreinovich (2003)} describe a greedy algorithm for producing a multivariate Horner scheme, given a multivariate polynomial:
 
-There are 7 multiplications and 3 additions. Here is a version with one @${y} factored out of each of the products (hereafter called monomials).
+@itemlist[@item{Find a variable that appears in the most monomials. Halt if no variable appears more than once.}
+          @item{Factor out that variable from the monomials it appears in.}
+          @item{Recur twice: once on the newly-factored monomials, and once on the monomials which were left alone.}]
 
-@$${f(x, y, z) = y(x^2z + x + yz + z)}
-
-Now @${z} is common among 3 of the inner monomials. It can be factored out without @${x}.
-
-@$${f(x, y, z) = y(z(x^2 + y + 1) + x) = y*(z*(x*x + y + 1) + x)}
-
-This version has 3 multiplications and the same 3 additions. In general, factoring out a variable decreases the number of multiplications, but preserves the number of additions.
-
-In general, you can reduce the number of multiplications in a multivariate polynomial by pulling out common factors. This method of reducing multipliactions in a multivariate polynomial is called the Multivariate Horner Scheme. Here is a greedy algorithm that 
-
-@itemlist[#:style 'ordered
-          @item{Find the factor that appears in the most monomials. If none exists, halt. If more than one exist, use the first. Let @${x} be that factor.}
-          @item{Let @${M} be the monomials @${x} appears in and @${N} be the ones it does not. Let @${O} be the monomial resulting from factoring out @${x} from @${M}.}]
-
-@bold{Bill chops doors in inns.} This is a nonsense sentence, but it has the interesting property that all its words are in dictionary order, and all the letters within each word are in alphabetical order. So it is possible to compress the sentence into a smaller representation by treating the sentence like a sum of products and factoring out common variables:
-
-@($$ "bill + chops + doors + in + inns = i(bll + n(1 + ns)) + os(chp + dor)")
-
-There is a second way to factor out common variables:
-
-@($$ "= i(bll + n) + s(o(chp + dor) + inn)")
-
-
-
-@url{https://scholarworks.utep.edu/cgi/viewcontent.cgi?article=1402&context=cs_techrep}
-
-@($$ "f(x_1, \\ldots, x_n) = \\sum_k M_k")
-
-@($$ "f(x_1, \\ldots, x_n) = x_i \\cdot \\left(\\sum_{k:x_i \\in M_k} M_k^\\prime \\right) + \\sum_{k:x_i \\notin M_k} M_k")
 
 Recall the Racket function @racket[rember], which removes the first matching element @racket[x] from a list @racket[l]:
 
