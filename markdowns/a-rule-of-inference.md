@@ -3,6 +3,7 @@
 Brett Schreiber, 2023-01-02. Edited 2024-01-21.
 
 Here is a rule of inference that I found:
+
 $$
 \frac
   {(b \lor p) \land (\neg p \lor \neg q) \land (q \lor d)}
@@ -18,6 +19,7 @@ $$
 $$
 
 The most general form I could find is this:
+
 $$
 \frac
   {((\bigvee_i b_i) \lor (\bigvee_i p_i)) \land ((\bigwedge_i \neg p_i) \lor (\bigwedge_i \neg q_i)) \land ((\bigvee_i q_i) \lor (\bigvee_i d_i))}
@@ -31,6 +33,7 @@ This is similar to [resolution](https://en.wikipedia.org/wiki/Resolution_(logic)
 One way I've tried to apply this rule of inference to a CNF is to draw a picture.
 
 For example, I would draw the following CNF:
+
 $$
 (x_1 \lor x_2 \lor x_3) \land \\
 (y_1 \lor y_2 \lor y_3) \land \\
