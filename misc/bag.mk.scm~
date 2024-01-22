@@ -1,6 +1,0 @@
-#lang racket
-
-(include "../../CodeFromTheReasonedSchemer2ndEd/trs2-impl.scm")
-
-(require "appendo.mk.rkt")
-
