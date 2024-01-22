@@ -45,7 +45,3 @@ $$
 Like this:
 
 ![Svg](../img/graph-hypergraph.svg)
-
-Or like this
-
-![Png](../img/graph-hypergraph.png)
