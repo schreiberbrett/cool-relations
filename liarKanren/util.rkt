@@ -3,7 +3,7 @@
 (include "../../CodeFromTheReasonedSchemer2ndEd/trs2-impl.scm")
 (require "stream.rkt")
 
-(provide ==-inf)
+(provide ==-inf setpredo)
 
 ;; Dangerous goal only to be used in lies
 ;; Takes a variable and a (potentially infinite) stream of ground values.
@@ -28,5 +28,5 @@
         (lambda ()
           (cond
             ((predicate? x) (succeed s))
-            ((var? x) ((==-inf x set-inf) s))
+            ((var? x) ((==-inf x set) s))
             (else (fail s))))))))

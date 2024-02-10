@@ -9,8 +9,8 @@
 (provide naturalo eveno oddo integero primeo prime-factorso)
 
 (define (naturalo n)
-  (set-and-unary-predicate-relation naturals-inf
-                                    exact-nonnegative-integer?))
+  (setpredo naturals-inf
+            exact-nonnegative-integer?))
 
 
 (define (eveno n)

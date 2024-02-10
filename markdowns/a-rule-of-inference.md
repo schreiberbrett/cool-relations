@@ -48,3 +48,5 @@ $$
 Like this:
 
 ![Svg](../img/graph-hypergraph.svg)
+
+The process 

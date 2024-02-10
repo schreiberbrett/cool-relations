@@ -36,22 +36,22 @@
 
 
 
-(: diagonalize-inf (All (a b) (-> (Stream a) (Stream b) (Stream (Pairof a b)))))
-(define (diagonalize-inf $1 $2)
+#;(: diagonalize-inf (All (a b) (-> (Stream a) (Stream b) (Stream (Pairof a b)))))
+#;(define (diagonalize-inf $1 $2)
   #f)
 
 
-(define (diagonalize-inf-helper $1 $2 seen1 seen2)
+#;(define (diagonalize-inf-helper $1 $2 seen1 seen2)
 
   
-  (cond ((and (null? $1) (null? $2)) '())
-        ((null? $1)
-         (map-inf (lambda (x2)
-                    (map (lambda (x1) (cons x1 x2)) seen1)) $2))
+    (cond ((and (null? $1) (null? $2)) '())
+          ((null? $1)
+           (map-inf (lambda (x2)
+                      (map (lambda (x1) (cons x1 x2)) seen1)) $2))
 
-        ((null? $2)
-         (map-inf (lambda (x1)
-                    (map (lambda (x2) (cons x1 x2)) seen2)) $1))))
+          ((null? $2)
+           (map-inf (lambda (x1)
+                      (map (lambda (x2) (cons x1 x2)) seen2)) $1))))
       
 
 

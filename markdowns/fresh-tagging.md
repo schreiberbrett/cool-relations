@@ -1,5 +1,21 @@
 # Keep variables fresh by using binary lists for tagging.
 
+I want to maintain an RSVP list in miniKanren. Something like this:
+
+```
+'((fred    yes)
+  (allison maybe)
+  (bob     no)
+  (gina    maybe)
+  (tracy   no)
+  (tim     yes))
+```
+
+I want to find everyone who isn't a definite `yes`, so that I know who to not invite next time.
+
+
+
+
 Recall the Haskell data type `Xor`:
 
 ```haskell

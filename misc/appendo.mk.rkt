@@ -1,6 +1,7 @@
 #lang racket
 
-(include "../../CodeFromTheReasonedSchemer2ndEd/trs2-impl.scm")
+;(include "../../CodeFromTheReasonedSchemer2ndEd/trs2-impl.scm")
+(require "../../faster-minikanren/mk.rkt")
 
 (provide appendo)
 

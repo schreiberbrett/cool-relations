@@ -1,0 +1,42 @@
+<head>
+<script>
+// @ts-check
+class TodoItem extends HTMLElement {    
+    connectedCallback() {
+        this.innerHTML = "Hi I am custom";
+    }
+}
+
+class Conde extends HTMLElement {
+    connectedCallback() {
+        this.innerHTML = '';
+        for (const child of this.children) {
+            this.innerHTML += `<div>Ga ga! ${child.innerHTML}</div>`
+        }
+
+        
+        this.innerHTML += `<button onclick=>+</button>
+    }
+}
+
+customElements.define("todo-item", TodoItem);
+customElements.define("mk-conde", Conde);
+</script>
+<style>
+mk-conde::before {
+    content: "(conde"
+}
+
+mk-conde::after {
+    content: ")"
+}
+</style>
+</head>
+<body>
+<todo-item></todo-item>
+<mk-conde>
+    <div>Foo</div>
+    <div>Bar</div>
+    <div>Baz</div>
+</mk-conde>
+</body>
