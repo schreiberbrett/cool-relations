@@ -1,10 +1,10 @@
-@William Byrd, your 2024 goals have inspired me to share ideas before they're perfect. So I'd like to continue posting to this channel, here with an idea on how to represent sets of natural numbers in miniKanren.
+Here's an idea on how to represent sets of natural numbers in miniKanren.
 
 I want to start with the simplest thing I can think of: testing a subset of the naturals for membership. I'm still thinking about how to implement testing for non-membership.
 
 If you were to ask me which subset of the naturals contains 4, and 0, and 3, I'd say {0 ... 3, 4, ... }.
 
-!(Picture)[img/relational-natset.png]
+![Picture](img/relational-natset.png)
 
 ```minikanren
 (defrel (>0o n)
