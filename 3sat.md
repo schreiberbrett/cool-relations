@@ -24,7 +24,7 @@ A 3-SAT formula in miniKanren is a list of triples where at least one clause of 
             (3sato rest assignments)))))
 ```
 
-We can treat `assignments` as a `Map<Nat, Bool>`. Then `lookupo` can be:
+We can treat `assignments` as a `Map<Nat, Bool>`. If it were an association list, then miniKanren could cheat and assign the same variable two different values. This version of `lookupo` expects a binary tree.
 
 ```minikanren
 (defrel (>0o l)
@@ -41,7 +41,7 @@ We can treat `assignments` as a `Map<Nat, Bool>`. Then `lookupo` can be:
             (lookupo next d v)))))
 ```
 
-The inorder representation I was using earlier was starting to give me a headache, so this version has the value come first, so it'll be reified in preorder now.
+The inorder representation I was using earlier was hard to visually parse, so I switched the representation from `'(,l ,x ,r)` to `'(,x ,l ,r) `.
 
 Trying the example:
 ```
