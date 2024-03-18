@@ -20,45 +20,6 @@ If you were to ask me which subset of the naturals contains 4, and 0, and 3, I'd
               (elemo d rec))))))
 ```
 
-```racket
-; racket
-(defrel (elemo n s)
-  (fresh (l m r)
-    (== s `(,l ,m ,r))
-    (conde ((== n '()) (== m #t))
-           ((fresh (a d rec)
-              (== n `(,a . ,d))
-              (conde ((== a 0) (>0o d) (== rec l))
-                     ((== a 1) (== rec r)))
-              (elemo d rec))))))
-```
-
-```lisp
-; lisp
-(defrel (elemo n s)
-  (fresh (l m r)
-    (== s `(,l ,m ,r))
-    (conde ((== n '()) (== m #t))
-           ((fresh (a d rec)
-              (== n `(,a . ,d))
-              (conde ((== a 0) (>0o d) (== rec l))
-                     ((== a 1) (== rec r)))
-              (elemo d rec))))))
-```
-
-```scm
-; scm
-(defrel (elemo n s)
-  (fresh (l m r)
-    (== s `(,l ,m ,r))
-    (conde ((== n '()) (== m #t))
-           ((fresh (a d rec)
-              (== n `(,a . ,d))
-              (conde ((== a 0) (>0o d) (== rec l))
-                     ((== a 1) (== rec r)))
-              (elemo d rec))))))
-```
-
 ```
 > (run* (q) (elemo '(0 0 1) q)
             (elemo '() q)
