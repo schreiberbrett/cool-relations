@@ -4,7 +4,7 @@ def extract_markdown_block():
     in_minikanren_block = False
 
     for line in sys.stdin:
-        if line.strip() == "```minikanren":
+        if line.strip() == "```scheme":
             in_minikanren_block = True
             continue
         elif in_minikanren_block and line.strip() == "```":

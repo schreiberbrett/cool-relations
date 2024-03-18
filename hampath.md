@@ -7,7 +7,7 @@ A throwaway relation, `か`, that asserts:
 * `n = |s|`
 
 
-```minikanren
+```scheme
 (defrel (か-with-countdown u s g n)
   (conde ((== n '()) (emptyo s))
          ((fresh (v rest n-1)
@@ -18,7 +18,7 @@ A throwaway relation, `か`, that asserts:
 ```
 
 
-```minikanren
+```scheme
 (defrel (か-w/o-countdown u s g)
   (conde ((emptyo s))
          ((fresh (v rest)
@@ -29,7 +29,7 @@ A throwaway relation, `か`, that asserts:
 
 Where `conjo` is the relation that adds an element to (or, picks an element from) a dict
 
-```minikanren
+```scheme
 (defrel (conjo k v s s+1)
   (!elemo k s)
   (elemo k v s+1))
@@ -37,7 +37,7 @@ Where `conjo` is the relation that adds an element to (or, picks an element from
 
 If a graph `g` is a map of its vertices to its neighbors, then `edgeo` would assert that `g` has vertex `u` whose neighbors include `v`.
 
-```minikanren
+```scheme
 (defrel (edgeo u v g)
   (fresh (neighbors)
     (elemo u neighbors g)
@@ -46,21 +46,21 @@ If a graph `g` is a map of its vertices to its neighbors, then `edgeo` would ass
 
 THe only map that can be empty is the empty map.
 
-```minikanren
+```scheme
 (defrel (emptyo m)
   (== m '()))
 ```
 
 The definition of directed graphs that have a hamiltonian path:
 
-```minikanren
+```scheme
 (defrel (has-hamiltonian-patho g)
   (fresh (starting-vertex neighbors)
     (elemo starting-vertex neighbors g)
      (か-w/o-countdown starting-vertex neighbors g)))
 ```
 
-```minikanren
+```scheme
 (defrel (hampatho g)
   (conde ((emptyo g))
          ((fresh (v neighbors)

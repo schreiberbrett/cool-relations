@@ -28,7 +28,7 @@ data List a = Cons a (List a) | Nil
 data UnaryNat = Zero | Succ UnaryNat
 ```
 
-```minikanren
+```scheme
 (defrel (peanoo n)
   (conde ((== n '())
          ((fresh (n-1)
@@ -37,7 +37,7 @@ data UnaryNat = Zero | Succ UnaryNat
 ```
 
 Peano numbers are ordered.
-```minikanren
+```scheme
 (defrel (peano-<o n m)
   (fresh (n-1 m-1)
     (== m `(s . ,m-1))
@@ -53,7 +53,7 @@ The solution set is a subset of `listo`. It directly encodes `listo` with furthe
 * `b :: List (0 | 1)`
 * `b`s final digit must be `1`.
 
-```minikanren
+```scheme
 (defrel (olego n)
   (conde ((== n '()))
          ((fresh (bit ⌊n/2⌋)

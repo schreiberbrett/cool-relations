@@ -2,7 +2,7 @@
 
 Fitch-style proofs in miniKanren
 
-```minikanren
+```scheme
 (defrel (proof^o premises pf)
   (conde ((== pf '()))
          ((fresh (a d phi reason x x1 x2 x1-reason x2-reason l r n m)

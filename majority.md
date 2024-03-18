@@ -6,7 +6,7 @@ An approach I've found works well is to use a helper relation `count-differenceo
 
 Notice I don't need a disequality check in the second `conde` branch, because as long as the majority value is more than half, there can be some "defectors".
 
-```minikanren
+```scheme
 (defrel (majorityo x l)
   (fresh (difference)
     (>0o difference)
@@ -15,14 +15,14 @@ Notice I don't need a disequality check in the second `conde` branch, because as
 
 Notice that `-1o` is really `+1o` with its arguments swapped.
 
-```minikanren
+```scheme
 (defrel (-1o x x-1)
   (+1o x-1 x))
 ```
 
 That mean there is a `+1o` in both `conde` branches. It can be factored out by introducing placeholder logic variables.
 
-```minikanren
+```scheme
 (defrel (count-differenceo x l c)
   (conde ((== l '()) (== c '()))
          ((fresh (a d rec alpha1 alpha2)
@@ -55,7 +55,7 @@ Here was my first attempt: Encode the integers like so:
 
 Then the successor relation can be described as follows:
 
-```minikanren
+```scheme
 (defrel (+1o x x+1)
   (conde ((== x   `(- . ,x+1)))
          ((== x+1 `(+ . ,x)))))
@@ -88,7 +88,7 @@ Using a different representation of integers, which uses a unary number represen
 There are two cases of the successor relation:
 1. If a number is nonnegative, then its successor must be positive, with one additional unary digit.
 2. If a number is negative, then its successor must not be positive, with one less unary digit.
-```minikanren
+```scheme
 (defrel (+1o2 x x+1)
   (fresh (p z n l)
     (conde ((== x `((,p ,z 0) ,l)) (== x+1 `((1 0 0) (o . ,l))))

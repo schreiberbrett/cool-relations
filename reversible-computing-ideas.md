@@ -1,7 +1,7 @@
 # Reversible relations in miniKanren
 
 Apparently, this gate is reversible.
-```minikanren
+```scheme
 (defrel (±ᵒ n₁ n₂ n₁+n₂ n₁−n₂)
   (fresh (n₁−1 n₂−1 n₁−1+n₂−1)
     (conde ((== n₂ '())

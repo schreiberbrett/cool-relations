@@ -7,7 +7,7 @@ extensions = {
     "```js\n": ".js",
     "```html\n": ".html",
     "```c\n": ".c",
-    "```minikanren\n": ".mk.rkt"
+    "```scheme\n": ".mk.rkt"
 }
 
 def copy_code_blocks(filename):

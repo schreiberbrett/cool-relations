@@ -2,7 +2,7 @@
 
 The classics
 
-```minikanren
+```scheme
 (defrel (pairo x)
   (fresh (a d) (== x `(,a . ,d))))
 
@@ -25,7 +25,7 @@ The classics
 
 `list-refᵒ`: List `l` has value `val` at index `n`. Inspired by Racket's [`list-ref`](https://docs.racket-lang.org/reference/pairs.html#%28def._%28%28quote._~23~25kernel%29._list-ref%29%29).
 
-```minikanren
+```scheme
 (defrel (list-refᵒ l n val)
   (fresh (a d n-1)
          (== l `(,a . ,d))

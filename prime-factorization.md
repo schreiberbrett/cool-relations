@@ -8,7 +8,7 @@ There are 2 non-overlapping conditions:
 
 Notice that neither condition succeeds when `n` is 0 and when `n` is 1.
 
-```minikanren
+```scheme
 (defrel (prime-factorso n factors)
   (conde ((fresh (a b)
             (>1o a)
@@ -21,7 +21,7 @@ Notice that neither condition succeeds when `n` is 0 and when `n` is 1.
 
 `>1o` and `*o` come from TRS2E. `primeo` is a cheat relation that takes advantage of the TRS2E miniKanren internals. It succeeds on fully ground, prime, Oleg numbers, enumerates all primes when a fresh variable, and fails on all other inputs.
 
-```minikanren
+```scheme
 (define (sieve ns)
   (cond ((pair? ns) (cons (build-num (car ns)) (sieve (filter-inf (lambda (x) (not (zero? (modulo x (car ns))))) (cdr ns)))))
         (else (lambda () (sieve (ns))))))

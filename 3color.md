@@ -8,7 +8,7 @@ Recurs on `g` using the `set` induction strategy, ordered by pairs of nats. From
 
 
 
-```minikanren
+```scheme
 (defrel (3color₁ᵒ g m)
   (conde ((== g '()))
          ((fresh (a d u v cᵤ cᵥ)
@@ -29,7 +29,7 @@ Recurs on `g` using the `set` induction strategy, ordered by pairs of nats. From
 
 `different−colorsᵒ`: Written positively, no disequality needed.
 
-```minikanren
+```scheme
 (defrel (different-colorsᵒ c₁ c₂)
   (conde ((== c₁ 'red)   (== c₂ 'blue))
          ((== c₁ 'red)   (== c₂ 'green))
@@ -43,7 +43,7 @@ Recurs on `g` using the `set` induction strategy, ordered by pairs of nats. From
 
 The less-than relation over natural numbers:
 
-```minikanren
+```scheme
 (defrel (<ₙᵒ n₁ n₂)
   (fresh (n₂-1)
     (== n₂ `(s . ,n₂-1))
@@ -67,7 +67,7 @@ The less-than relation over pairs of natural numbers. (Using 2-lists instead of 
 
 Factoring out the common `<ₙᵒ`.
 
-```minikanren
+```scheme
 (defrel (<ₚᵒ p₁ p₂)
   (fresh (l₁ r₁ l₂ r₂ α₁ α₂)
     (== p₁ `(,l₁ ,r₁))

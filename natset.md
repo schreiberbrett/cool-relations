@@ -8,7 +8,7 @@ If you were to ask me which subset of the naturals contains 4, and 0, and 3, I'd
 
 ![Picture](img/relational-natset.png)
 
-```minikanren
+```scheme
 (defrel (elemo n s)
   (fresh (l m r)
     (== s `(,l ,m ,r))
@@ -29,7 +29,7 @@ If you were to ask me which subset of the naturals contains 4, and 0, and 3, I'd
 
 Raffi Sanna helped me figure out the code for its complement;
 
-```minikanren
+```scheme
 ;; Adapted from code by Raffi Sanna
 (defrel (!elemo n s)
   (fresh (l r)

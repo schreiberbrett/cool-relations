@@ -2,7 +2,7 @@
 
 Suppose I had the following relation, which asserts that every element in `l` is `'banana`.
 
-```minikanren
+```scheme
 (defrel (bananaso l)
   (conde ((== l '()))
          ((fresh (d)
@@ -13,7 +13,7 @@ Suppose I had the following relation, which asserts that every element in `l` is
 Given the following two expressions:
 
 v1:
-```minikanren
+```scheme
 
 (define (v1 n)
   (run n (a b) (conde ((bananaso a))
@@ -21,7 +21,7 @@ v1:
 ```
 
 And v2:
-```minikanren
+```scheme
 (define (v2 n)
   (run n (a b)
     (fresh (x)
