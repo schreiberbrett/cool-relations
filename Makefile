@@ -30,7 +30,7 @@ scribble-html = \
 	scribble-htmls/minimize-recursive-calls.html
 
 .PHONY: all
-all: $(scribble-html) $(literate-html) $(literate-code) $(bezae-code)
+all: $(scribble-html) $(literate-html) $(literate-code) $(bezae-code) full.scm full.rkt
 
 scribble-htmls/%.html: scribble-src/%.scrbl
 	scribble --dest scribble-htmls $<
@@ -47,6 +47,11 @@ literate-articles/%.html: literate-articles/%.lit
 $(bezae-code): bezae/bezae.html bezae/bezae-compiler.py
 	python3 bezae/bezae-compiler.py
 
+full.rkt: import.rkt $(wildcard *.md)
+	cat *.md | python3 tangle2.py | cat import.rkt - > full.rkt
+
+full.scm: import.scm $(wildcard *.md)
+	cat *.md | python3 tangle2.py | cat import.scm - > full.scm
 
 .PHONY: clean
 clean:

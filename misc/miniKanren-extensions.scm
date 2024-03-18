@@ -35,10 +35,10 @@
           ((var? n) (eveno-helper! n 0))
           (else fail))) s))))
 
-(defrel (eveno-helper! x n)
-  (disj
-    (== x n)
-    (eveno-helper! x (+ 2 n))))
+(defrel (eveno-helper! x ground!)
+  (conde
+    ((== x ground!))
+    ((eveno-helper! x (+ 2 ground!)))))
 
 (define (succo n-1 n)
   (lambda (s)

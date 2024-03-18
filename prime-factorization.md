@@ -1,6 +1,6 @@
 # Prime Factorization
 
-Now that I have a set data structure, here's my attempt at writing the relationship between a number `n` and its prime factors `factors`.
+A set data structure can be useful in writing the relationship between a number and its prime factors. (But a multiset would be better).
 
 There are 2 non-overlapping conditions:
 1. `n` is prime. Then `n` is its only factor. (Only is a bit too negative for me, so I'll just say `n` is a factor.)
@@ -9,22 +9,6 @@ There are 2 non-overlapping conditions:
 Notice that neither condition succeeds when `n` is 0 and when `n` is 1.
 
 ```minikanren
-(include "../CodeFromTheReasonedSchemer2ndEd/trs2-impl.scm")
-(include "../CodeFromTheReasonedSchemer2ndEd/trs2-arith.scm")
-
-(defrel (>0o n)
-  (fresh (a d) (== n `(,a . ,d))))
-
-(defrel (elemo n s)
-  (fresh (l m r)
-    (== s `(,l ,m ,r))
-    (conde ((== n '()) (== m #t))
-           ((fresh (a d rec)
-              (== n `(,a . ,d))
-              (conde ((== a 0) (>0o d) (== rec l))
-                     ((== a 1) (== rec r)))
-              (elemo d rec))))))
-
 (defrel (prime-factorso n factors)
   (conde ((fresh (a b)
             (>1o a)
@@ -55,10 +39,13 @@ Notice that neither condition succeeds when `n` is 0 and when `n` is 1.
 
 (define primes-inf (sieve (count-up-inf 2)))
 
+(define succeed (== #f #f))
+(define fail (== #t #f))
+
 (define ((==-inf v s-inf) s)
   (cond ((null? s-inf) (succeed s))
-        ((pair? s-inf) ((disj2 (== v (car s-inf))
-                               (==-inf v (cdr s-inf))) s))
+        ((pair? s-inf) ((conde ((== v (car s-inf)))
+                               ((==-inf v (cdr s-inf)))) s))
 
         (else (lambda () ((==-inf v (s-inf)) s)))))
 

@@ -1,9 +1,5 @@
 # Hamiltonian Path in miniKanren
 
-```minikanren
-(require "../faster-minikanren/main.rkt")
-```
-
 A throwaway relation, `か`, that asserts:
 * `u` is a starting vertex
 * `s` is the set of vertices left to visit
@@ -37,34 +33,6 @@ Where `conjo` is the relation that adds an element to (or, picks an element from
 (defrel (conjo k v s s+1)
   (!elemo k s)
   (elemo k v s+1))
-```
-
-Where `elemo` and `!elemo` are defined as follows:
-
-```minikanren
-(defrel (>0o n)
-  (fresh (a d) (== n `(,a . ,d))))
-
-(defrel (elemo k v s)
-  (fresh (val l r)
-    (== s `(,val ,l ,r))
-    (conde ((== k '()) (== val v))
-           ((fresh (a d rec)
-              (== k `(,a . ,d))
-              (conde ((== a 0) (>0o d) (== rec l))
-                     ((== a 1) (== rec r)))
-              (elemo d v rec))))))
-
-;; Adapted from code by Raffi Sanna
-(defrel (!elemo n s)
-  (fresh (l r)
-    (conde ((== s '()))
-           ((== n '()) (== s `(#f ,l ,r)))
-           ((fresh (val b rec)
-              (== s `(,val ,l ,r))
-              (conde ((== n `(0 . ,b)) (>0o b) (== rec l))
-                     ((== n `(1 . ,b)) (== rec r)))
-              (!elemo b rec))))))
 ```
 
 If a graph `g` is a map of its vertices to its neighbors, then `edgeo` would assert that `g` has vertex `u` whose neighbors include `v`.

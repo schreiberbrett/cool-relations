@@ -1,9 +1,5 @@
 # Factoring miniKanren expressions
 
-```minikanren
-(require "../faster-minikanren/mk.rkt")
-```
-
 Suppose I had the following relation, which asserts that every element in `l` is `'banana`.
 
 ```minikanren
@@ -18,6 +14,7 @@ Given the following two expressions:
 
 v1:
 ```minikanren
+
 (define (v1 n)
   (run n (a b) (conde ((bananaso a))
                       ((bananaso b)))))

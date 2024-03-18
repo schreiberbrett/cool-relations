@@ -11,8 +11,6 @@ I've tried to create a 3-SAT recognizer in miniKanren. 3-SAT is is the set of al
 A 3-SAT formula in miniKanren is a list of triples where at least one clause of every triple has its assigned value.
 
 ```minikanren
-(require "../faster-minikanren/main.rkt")
-
 (defrel (3sato cnf assignments)
   (conde ((== cnf '()))
          ((fresh (c1 c2 c3 rest var val)
@@ -27,10 +25,6 @@ A 3-SAT formula in miniKanren is a list of triples where at least one clause of 
 We can treat `assignments` as a `Map<Nat, Bool>`. If it were an association list, then miniKanren could cheat and assign the same variable two different values. This version of `lookupo` expects a binary tree.
 
 ```minikanren
-(defrel (>0o l)
-  (fresh (a d)
-    (== l `(,a . ,d))))
-
 (defrel (lookupo map k v)
   (fresh (l x r a d next)
     (== map `(,x ,l ,r))

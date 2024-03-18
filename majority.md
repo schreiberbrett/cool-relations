@@ -1,6 +1,6 @@
 # The Majority Relation
 
-I want to describe a relation between a value `x` and a list `l` where `x` is the majority (more than half) of all values in `l`.
+I really want to describe a relation between a value `x` and a list `l` where `x` is the majority (more than half) of all values in `l`.
 
 An approach I've found works well is to use a helper relation `count-differenceo` that subtracts the number of occurrences of `x` from the number of non-occurrences of `x` in `l`. It works by recurring through `l` with an integer `counter` variable. Anytime `x` is encountered in `l`, increment the counter. Otherwise, decrement the counter. `majorityo` only succeeds if the difference is positive.
 

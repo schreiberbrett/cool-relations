@@ -1,3 +1,5 @@
+# Set of Binary Natural Numbers
+
 Here's an idea on how to represent sets of natural numbers in miniKanren.
 
 I want to start with the simplest thing I can think of: testing a subset of the naturals for membership. I'm still thinking about how to implement testing for non-membership.
@@ -7,9 +9,6 @@ If you were to ask me which subset of the naturals contains 4, and 0, and 3, I'd
 ![Picture](img/relational-natset.png)
 
 ```minikanren
-(defrel (>0o n)
-  (fresh (a d) (== n `(,a . ,d))))
-
 (defrel (elemo n s)
   (fresh (l m r)
     (== s `(,l ,m ,r))
@@ -27,3 +26,18 @@ If you were to ask me which subset of the naturals contains 4, and 0, and 3, I'd
             (elemo '(1 1) q))
 '((((_.0 _.1 (_.2 #t _.3)) _.4 _.5) #t (_.6 _.7 (_.8 #t _.9))))
 ``` 
+
+Raffi Sanna helped me figure out the code for its complement;
+
+```minikanren
+;; Adapted from code by Raffi Sanna
+(defrel (!elemo n s)
+  (fresh (l r)
+    (conde ((== s '()))
+           ((== n '()) (== s `(,l #f ,r)))
+           ((fresh (val b rec)
+              (== s `(,val ,l ,r))
+              (conde ((== n `(0 . ,b)) (>0o b) (== rec l))
+                     ((== n `(1 . ,b)) (== rec r)))
+              (!elemo b rec))))))
+```
