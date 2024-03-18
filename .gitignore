@@ -4,3 +4,5 @@ node_modules
 *.rkt~
 *.dep
 *.zo
+full.rkt
+full.scm
