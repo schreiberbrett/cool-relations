@@ -53,6 +53,10 @@ full.rkt: import.rkt $(wildcard *.md)
 full.scm: import.scm $(wildcard *.md)
 	cat *.md | python3 tangle2.py | cat import.scm - > full.scm
 
+.PHONY: racket
+racket: full.rkt
+	racket -i -e "(enter! \"full.rkt\")"
+
 .PHONY: clean
 clean:
 	rm -f $(scribble-html)

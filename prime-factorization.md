@@ -1,4 +1,40 @@
-# Prime Factorization
+# Prime Factorization in miniKanren
+
+There is a one-to-one relation between an Oleg number and the multiset of its prime factors, which can be represented as a sorted list. The definition of `sorted-listo` can be found in [data-structures.md](data-structures.md).
+
+
+```scheme
+(defrel (prime-factorso1 l n)
+  (sorted-listo l)
+  (all-primeo l)
+  (producto l n))
+```
+
+If this were an imperative language, I could check all three properties (check list is sorted, check every element is prime, and accumulate their product) in a single for-loop. A similar optimization can be done in miniKanren. (Compare [equational reasoning](https://www.youtube.com/watch?v=MjpZJA1jIqU) and [Hutton 1999](https://www.cs.nott.ac.uk/~pszgmh/fold.pdf), although I don't think `sorted-list?`, the functional version of `sorted-listo`, can be expressed as a `fold`.)
+
+It's a really boring step, and I wish a miniKanren compiler could do it.
+
+```scheme
+(defrel (prime-factorso2 l n)
+  (conde ((== l '()) (== n '(1)))
+         ((fresh (a d a/n)
+            (== l `(,a . ,d))
+            (primeo a)
+            (*o a a/n n)
+            (conde ((== d '()) (== n a))
+                   ((fresh (ad dd)
+                      (== d `(,ad . ,dd))
+                      (<=o a ad)
+                      (prime-factorso2 d a/n))))))))
+```
+
+A cheat relation that uses `project`.
+```scheme
+(defrel (primeo n)
+  (olego n)
+  (project (n)
+    (== #t (prime? (unbuild-num n)))))
+```
 
 A set data structure can be useful in writing the relationship between a number and its prime factors. (But a multiset would be better).
 
@@ -8,71 +44,19 @@ There are 2 non-overlapping conditions:
 
 Notice that neither condition succeeds when `n` is 0 and when `n` is 1.
 
-```scheme
-(defrel (prime-factorso n factors)
-  (conde ((fresh (a b)
-            (>1o a)
-            (>1o b)
-            (*o a b n)
-            (prime-factorso a factors)
-            (prime-factorso b factors)))
-         ((primeo n) (elemo n factors))))
-```
-
 `>1o` and `*o` come from TRS2E. `primeo` is a cheat relation that takes advantage of the TRS2E miniKanren internals. It succeeds on fully ground, prime, Oleg numbers, enumerates all primes when a fresh variable, and fails on all other inputs.
 
 ```scheme
-(define (sieve ns)
-  (cond ((pair? ns) (cons (build-num (car ns)) (sieve (filter-inf (lambda (x) (not (zero? (modulo x (car ns))))) (cdr ns)))))
-        (else (lambda () (sieve (ns))))))
-    
-(define (filter-inf p? s-inf)
-  (cond ((null? s-inf) '())
-        ((pair? s-inf) 
-         (if (p? (car s-inf))
-           (cons (car s-inf) (filter-inf p? (cdr s-inf)))
-           (filter-inf p? (cdr s-inf))))
-        (else (lambda () (filter-inf p? (s-inf))))))
-
-(define (count-up-inf n)
-  (cons n (lambda () (count-up-inf (+ 1 n)))))
-
-(define primes-inf (sieve (count-up-inf 2)))
-
-(define succeed (== #f #f))
-(define fail (== #t #f))
-
-(define ((==-inf v s-inf) s)
-  (cond ((null? s-inf) (succeed s))
-        ((pair? s-inf) ((conde ((== v (car s-inf)))
-                               ((==-inf v (cdr s-inf)))) s))
-
-        (else (lambda () ((==-inf v (s-inf)) s)))))
-
-(define ((primeo n) s)
-  (cond ((and (nat? n) (prime? n)) (succeed s))
-        ((var? n) ((==-inf n primes-inf) s))
-        (else (fail s))))
-        
-(define (nat? n)
-  (or (null? n)
-      (and (pair? n)
-           (or (and (equal? (car n) 0) (pair? (cdr n)) (nat? (cdr n)))
-               (and (equal? (car n) 1) (nat? (cdr n)))))))
-
 (define (unbuild-num n)
   (cond ((null? n) 0)
         (else (+ (car n) (* 2 (unbuild-num (cdr n)))))))
 
 (define (prime? n)
-  (prime-helper n primes-inf))
-
-(define (prime-helper n primes)
-  (cond ((and (pair? primes) (equal? n (car primes))) #t)
-        ((and (pair? primes) (< (unbuild-num n) (unbuild-num (car primes)))) #f)
-        ((and (pair? primes) (prime-helper n (cdr primes))))
-        ((pair? primes) (prime-helper n (cdr primes)))
-        (else (prime-helper n (primes)))))
+  (let loop ((i 2))
+    (cond ((<= n 1) #f)
+          ((= i n) #t)
+          ((= (modulo n i) 0) #f)
+          (else (loop (+ i 1))))))
 ```
 
 Results:
@@ -88,4 +72,22 @@ Results:
 '()
 > (run 5 (q) (primeo q))
 '(((0 1)) ((1 1)) ((1 0 1)) ((1 1 1)) ((1 1 0 1)))
+```
+
+## Miscellaneous definitions
+
+```scheme
+(defrel (producto l n)
+  (conde ((== l '()) (== n '(1)))
+         ((fresh (a d n/a)
+            (== l `(,a . ,d))
+            (*o a n/a n)
+            (producto d n/a)))))
+            
+(defrel (all-primeo l)
+  (conde ((== l '()))
+         ((fresh (a d)
+            (== l `(,a . ,d))
+            (primeo a)
+            (all-primeo d)))))
 ```

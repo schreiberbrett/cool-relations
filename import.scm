@@ -1,1 +1,1 @@
-(load "../faster-minikanren/mk.scm")
+(load "../faster-minikanren/chez.scm")

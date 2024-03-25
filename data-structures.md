@@ -76,7 +76,7 @@ The set is a sorted, unique list. Therefore, every element is less than its tail
 The `<o` must be an actual relation.
 
 ```
-(defrel (unique-ordered-listo s)
+(defrel (unique-sorted-listo s)
   (conde ((== s '())
          ((fresh (a d)
             (== s `(,a . ,d))
@@ -84,11 +84,22 @@ The `<o` must be an actual relation.
                    ((fresh (ad dd)
                       (== d `(,ad . ,dd))
                       (<o a ad)
-                      (unique-ordered-listo d)))))))))
+                      (unique-sorted-listo d)))))))))
 ```
 
 
 ## Multisets
 
-Multisets can be 
+Multisets are ordered lists. Here is a working version specialized to Oleg numbers (`<=o` is a miniKanren builtin).
 
+```scheme
+(defrel (sorted-listo l)
+  (conde ((== l '()))
+         ((fresh (a d)
+            (== l `(,a . ,d))
+            (conde ((== d '()))
+                   ((fresh (ad dd)
+                      (== d `(,ad . ,dd))
+                      (<=o a ad)
+                      (sorted-listo d))))))))
+```
