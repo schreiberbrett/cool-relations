@@ -1,8 +1,12 @@
 # Prime Factorization in miniKanren
 
-I love the fundamental theorem of arithmetic, which asserts that there's a one-to-one relationship between:
+I'm interested in the fundamental theorem of arithmetic, which asserts that there's a one-to-one relationship between:
 - `n`, a positive natural number in Oleg form, and:
 - `l`, a multiset of its prime factors.
+
+Below is my attempt to define this relationship in miniKanren. I was able to get it working in some modes with `(run 1 ...)`. I had trouble with `(run 2 ...)`.
+
+First, the naive version:
 ```scheme
 (defrel (naive-prime-factorso n l)
   (sorted-listo l)
@@ -17,8 +21,6 @@ Results:
 ...
 ```
 The first query succeeds with 30. The second query may halt at some point, but I am impatient.
-
-If this were an imperative language, I could check all three properties (check list is sorted, check every element is prime, and accumulate their product) in a single for-loop. A similar optimization can be done in miniKanren. (Compare [equational reasoning](https://www.youtube.com/watch?v=MjpZJA1jIqU) and [Hutton 1999](https://www.cs.nott.ac.uk/~pszgmh/fold.pdf), although I don't think `sorted-list?`, the functional version of `sorted-listo`, can be expressed as a `fold`.)
 
 The calls to `sorted-listo`, `all-primeo`, and `producto` must each recur through `l`. There's a way to rewrite the relation that only recurs through `l` once. It's a boring mechanical step. I wish a miniKanren compiler could do it.
 ```scheme
@@ -39,7 +41,7 @@ Results:
 > (run 1 (q) (prime-factorso q (map build-num '(2 3 5))))
 '((0 1 1 1 1))
 ```
-Runs backwards just fine, same as the naive version. But it can run forwards, too:
+Runs backwards just fine, same as the naive version. But this version can run forwards:
 ```
 > (run 1 (q) (prime-factorso (build-num 156) q))
 '(((0 1) (0 1) (1 1) (1 0 1 1)))
@@ -49,7 +51,7 @@ The prime factors of 156 are 2, 2, 3, and 13. Are there any other ways to prime 
 > (run 2 (q) (prime-factorso (build-num 156) q))
 ...
 ```
-This query diverges. There may be a way to use `(once ...)` in the relation definition to enfore that this is a one-to-one relationship.
+This query diverges. There may be a way to use `(once ...)` in the relation definition to enfore that this is a one-to-one relationship. I'm not sure yet.
 
 `primeo` is a cheat relation.
 
@@ -61,7 +63,6 @@ This query diverges. There may be a way to use `(once ...)` in the relation defi
 ```
 
 Finally, just for fun:
-
 ```
 > (time (length (run 15 (a b) (naive-prime-factorso a b))))
 cpu time: 21345 real time: 21387 gc time: 5714
@@ -87,8 +88,7 @@ Scheme-specific:
           (else (loop (+ i 1))))))
 ```
 
-
-Here are two miscellaneous miniKanren definitions.
+Throwaway miniKanren definitions:
 ```scheme
 (defrel (producto l n)
   (conde ((== l '()) (== n '(1)))
