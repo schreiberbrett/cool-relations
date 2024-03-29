@@ -11,7 +11,7 @@ I love the fundamental theorem of arithmetic, which asserts that there's a one-t
 ```
 Results:
 ```
-> (run 1 (q) (naive-prime-factorso q (list (build-num 2) (build-num 3) (build-num 5))))
+> (run 1 (q) (naive-prime-factorso q (map build-num '(2 3 5))))
 '((0 1 1 1 1))
 > (run 1 (q) (naive-prime-factorso (build-num 13) q))
 ...
@@ -36,8 +36,7 @@ The calls to `sorted-listo`, `all-primeo`, and `producto` must each recur throug
 ```
 Results:
 ```
-> (run 1 (q) (prime-factorso q (list (build-num 2) (build-num 3) (buil
-d-num 5))))
+> (run 1 (q) (prime-factorso q (map build-num '(2 3 5))))
 '((0 1 1 1 1))
 ```
 Runs backwards just fine, same as the naive version. But it can run forwards, too:
