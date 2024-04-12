@@ -1,0 +1,17 @@
+Conjure a list of nondeterministic length N, where each element is the symbol 'hole.
+
+If N is odd, replace any 'hole (except the final element, of course) with the ground bit 0.
+
+Create 2 fresh variables: e and o, with the constraint that e =/= o.
+
+while any 'hole in l:
+    Nondeterministically do one of the cases:
+    Case 1: * Create a new fresh variable x[i].
+            * Fill 1 'hole at an even index in L with x[i].
+            * Fill another 'hole at an odd index with the same x[i].
+    
+    
+    Case 2: * Fill 3 'holes at even indices with the existing fresh variable e.
+            * Fill 3 'holes at odd indices with the existing fresh variable o.
+            
+At this point, the list contains no 'holes, just fresh variables. You  now have a fully fresh (or nearly fresh) miniKanren number that is divisible by 3.

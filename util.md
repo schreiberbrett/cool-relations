@@ -35,3 +35,18 @@ The classics
                 ((== n `(s . ,n-1))
                  (list-refᵒ d n-1 val)))))
 ```
+
+# `build-num` analog for building nats
+
+```scheme
+(define (build-nat n)
+  (if (zero? n) '() `(s . ,(build-nat (- n 1)))))
+
+(defrel (nat-lengtho n l)
+  (conde ((== n '()) (== l '()))
+         ((fresh (n-1 a d)
+            (== n `(s . ,n-1))
+            (== l `(,a . ,d))
+            (nat-lengtho n-1 d)))))
+```
+

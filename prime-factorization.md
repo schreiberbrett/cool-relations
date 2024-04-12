@@ -28,14 +28,21 @@ The calls to `sorted-listo`, `all-primeo`, and `producto` must each recur throug
   (conde ((== l '()) (== n '(1)))
          ((fresh (a d a/n)
             (== l `(,a . ,d))
-            (primeo a)
             (*o a a/n n)
+            (primeo a)
             (conde ((== d '()) (== n a))
                    ((fresh (ad dd)
                       (== d `(,ad . ,dd))
                       (<=o a ad)
                       (prime-factorso a/n d))))))))
 ```
+
+Some quick and dirty conjunction analysis:
+- `(*o a a/n n)` should come before `(primeo a)`, because`(*o a a/n n)` bounds `a` when `n` is ground, whereas `(primeo a)`, given a fresh `a`, yields infinitely many results. (thank you, [Euclid's theorem](https://en.wikipedia.org/wiki/Euclid%27s_theorem)).
+- `(<=o a ad)` should probably come before `(prime-factorso a/n d)`. This one I'm less sure about, I just always do it.
+
+Every one-to-one relation should strive to be as reliable as `==` and `=/=`.
+
 Results:
 ```
 > (run 1 (q) (prime-factorso q (map build-num '(2 3 5))))
@@ -48,10 +55,10 @@ Runs backwards just fine, same as the naive version. But this version can run fo
 ```
 The prime factors of 156 are 2, 2, 3, and 13. Are there any other ways to prime factorize 156?
 ```
-> (run 2 (q) (prime-factorso (build-num 156) q))
-...
+> (run* (q) (prime-factorso (build-num 156) 
+q))
+'(((0 1) (0 1) (1 1) (1 0 1 1)))
 ```
-This query diverges. There may be a way to use `(once ...)` in the relation definition to enfore that this is a one-to-one relationship. I'm not sure yet.
 
 `primeo` is a cheat relation.
 
@@ -68,9 +75,11 @@ Finally, just for fun:
 cpu time: 21345 real time: 21387 gc time: 5714
 15
 > (time (length (run 15 (a b) (prime-factorso a b))))
-cpu time: 465 real time: 466 gc time: 91
+cpu time: 184 real time: 185 gc time: 27
 15
 ```
+
+
 
 ## Miscellaneous definitions
 
