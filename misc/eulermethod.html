@@ -1,24 +1,27 @@
-<style>
-svg { display: block };
-</style>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Euler Method</title>
+</head>
+<body>
+    <div id="container">
+        <label for="y0">y(0) = </label>
+        <input type="number" id="y0" onChange="render()">
+        
+        <label for="derivative-expression">y'(x) = </label>
+        <input type="text" id="derivative-expression">
+        
+        <label for="N">Number of iterations: </label>
+        <input onChange="render()" type="number" min="1" id="N">
+        
+        <p>y(1) = <span id="y1"></span></p>
+        
+        <svg id="foo"></svg>
+    </div>
 
-y(0) = <input type="number" id="y0" onChange="render()">
-
-<label for="derivative-expression">y'(x) = </label>
-<input type="text" id="derivative-expression">
-
-<label for="N">Number of iterations: </label>
-<input onChange="render()" type="number" min="1" id="N">
-
-y(1) = <span id="y1"></span>
-
-<svg>
-<polyline id="line" points="" style="stroke:black; stroke-width:1px; fill:none" />
-</svg>
-
-<svg id="foo"></svg>
-
-<script>
+    <script>
 function render() {
     const y0 = parseFloat(document.getElementById('y0').value);
 
@@ -97,4 +100,6 @@ function plotScatter(xPoints, yPoints) {
         svg.appendChild(circle);
     });
 }
-</script>
+    </script>
+</body>
+</html>
