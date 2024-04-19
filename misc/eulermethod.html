@@ -1,0 +1,100 @@
+<style>
+svg { display: block };
+</style>
+
+y(0) = <input type="number" id="y0" onChange="render()">
+
+<label for="derivative-expression">y'(x) = </label>
+<input type="text" id="derivative-expression">
+
+<label for="N">Number of iterations: </label>
+<input onChange="render()" type="number" min="1" id="N">
+
+y(1) = <span id="y1"></span>
+
+<svg>
+<polyline id="line" points="" style="stroke:black; stroke-width:1px; fill:none" />
+</svg>
+
+<svg id="foo"></svg>
+
+<script>
+function render() {
+    const y0 = parseFloat(document.getElementById('y0').value);
+
+    const F = Function(
+        "x", "y",
+        "return " + document.getElementById('derivative-expression').value
+    );
+    
+    try {
+        F(0, 0);
+    } catch (error) {
+        return;
+    }
+    
+
+    const N = parseInt(document.getElementById('N').value);
+
+    
+    const [x, y] = solve(y0, F, N);
+    
+    plotScatter(x, y);
+    
+    document.getElementById('y1').innerText = y.at(-1);
+}
+
+function solve(y0, F, N) {
+    const h = 1 / N;
+    
+    let x = new Array(N + 1);
+    let y = new Array(N + 1);
+    
+    x[0] = 0;
+    y[0] = y0;
+    
+    for (let i = 0; i < N; i++) {
+        x[i + 1] = x[i] + h;
+        y[i + 1] = y[i] + h * F(x[i], y[i]);
+    }
+    
+    return [x, y];
+}
+
+// From ChatGPT
+function plotScatter(xPoints, yPoints) {
+    const svg = document.getElementById("foo");
+    const width = svg.clientWidth;  // get the width of the SVG
+    const height = svg.clientHeight; // get the height of the SVG
+
+    if (!svg || xPoints.length !== yPoints.length) {
+        console.error("Invalid SVG element or data points mismatch!");
+        return;
+    }
+
+    // Clear previous contents
+    svg.innerHTML = '';
+
+    // Find the range of the data
+    const xMin = Math.min(...xPoints);
+    const xMax = Math.max(...xPoints);
+    const yMin = Math.min(...yPoints);
+    const yMax = Math.max(...yPoints);
+
+    // Function to scale X data
+    const scaleX = (x) => (x - xMin) / (xMax - xMin) * width;
+
+    // Function to scale Y data (inverted as SVG's origin is at the top left)
+    const scaleY = (y) => height - (y - yMin) / (yMax - yMin) * height;
+
+    // Create circles for each data point
+    xPoints.forEach((x, index) => {
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", scaleX(x));
+        circle.setAttribute("cy", scaleY(yPoints[index]));
+        circle.setAttribute("r", 1);  // radius of the circle
+        circle.setAttribute("fill", "black");  // color of the circle
+        svg.appendChild(circle);
+    });
+}
+</script>
