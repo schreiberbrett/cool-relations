@@ -16,7 +16,7 @@ Here is an example of a formula in existential disjunctive normal form:
 An expression in miniKanren can be in existential disjunctive normal form as well. All that means is that the expression has the shape `(fresh (_) (conde (_) (_) (_) ... (_)))`. For convenience, I will call miniKanren expressions in this form "EDNFs".
 
 An EDNF:
-```scheme
+```
 (fresh (a1 a2 a3 b1 b2 b3 c1 c2 c3)
     (conde
         ((po a1) (qo a2) (ro a3))

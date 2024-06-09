@@ -16,7 +16,7 @@ appendo :: [([a], [a], [a])]
 
 The infinite list of all triples such that the third item is the first and second. But this solution ignores the possibliity of fresh variables. Look at the result of the first 5 entries in the appendo infinite table:
 
-```scheme
+```
 > (run 5 (a b c) (appendo a b c))
 '((() _0 _0)
   ((_0) _1 (_0 . _1))

@@ -1,0 +1,1 @@
+See [Pure, Declarative, and Constructive Arithmetic Relations by Kiselyov, et al.](https://okmij.org/ftp/Prolog/Arithm/arithm.pdf) for further details.

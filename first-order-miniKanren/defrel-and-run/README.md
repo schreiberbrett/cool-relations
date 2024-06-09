@@ -3,7 +3,7 @@
 miniKanren expressions in existential disjunctive normal form (EDNFs) become especially useful when they have one ore more **simple conjunctions**. A simple conjunction is when one of the inner conjunctions of the EDNF contains only the equality relation `==`.
 
 Consider the following `run` clause:
-```scheme
+```
 (run 10 (q)
     (fresh (a b c)
         (conde
@@ -16,7 +16,7 @@ Consider the following `run` clause:
 The first and third conjunctions are simple conjunctions. There is a straightforward unification algorithm when every clause in a conjunction is `==`. Applying this algorithm on the first algorithm succeeds with result `'(x y z)`, which can be added to the output.
 
 Then the `run` expression can remove that simple conjunction and decrement its run number.
-```scheme
+```
 (run 9 (q)
     (fresh (a b c)
         (conde
@@ -27,7 +27,7 @@ Then the `run` expression can remove that simple conjunction and decrement its r
 
 The second simple conjunction fails because `a` cannot be both 0 and 1. It can be removed but no result is added to the output and the run number stays 9.
 
-```scheme
+```
 (run 9 (q)
     (fresh (a b c)
         (conde

@@ -11,7 +11,7 @@ In this article, I will use the following convention:
 Consider a type `X` with two subtypes `X1` and `X2`, and two operations on `X`. Two subtypes & two operations = 4 definitons.
 
 In Java, this would be an interface with 2 subclasses and 2 methods.
-```java
+```
 public interface X {
     int f1();
     int f2();
@@ -29,7 +29,7 @@ public class X2 implements X {
 ```
 
 In Haskell, this would be a data type with 2 constructors and 2 functions.
-```haskell
+```
 data X
     = X1
     | X2
@@ -43,9 +43,9 @@ f2 X1 = {- ... -}
 f2 X2 = {- ... -}
 ```
 
-# Adding a third operation`f3`
+# Adding a third operation `f3`
 In Java, the new code is divided into 3 parts.
-```java
+```
 public interface X {
     int f1();
     int f2();
@@ -66,7 +66,7 @@ public class X2 extends X {
 ```
 
 In Haskell, it is together.
-```haskell
+```
 data X
     = X1
     | X2
@@ -87,7 +87,7 @@ f3 X2 = {- ... -} -- NEW
 # Adding a third subtype `X3` instead
 In Java, the new code for `X3` is grouped together.
 
-```java
+```
 public interface X {
     int f1();
     int f2();
@@ -110,7 +110,7 @@ public class X3 extends X { // NEW
 ```
 
 In Haksell, it is divided into three parts.
-```haskell
+```
 data X
     = X1
     | X2

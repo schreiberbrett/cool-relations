@@ -4,26 +4,9 @@ In relational algebra, projection and selection are operations on relations. The
 
 ## Projection
 
-Consider the following relations:
-
-```scheme
-(defrel (listo x)
-  (conde ((== x '()))
-         ((fresh (h t)
-                 (== x `(,h . ,t))
-                 (listo x)))))
-
-(defrel (appendo l r o)
-  (conde ((== l '()) (== r o))
-         ((fresh (a d rec)
-                 (== l `(,a . ,d))
-                 (== o `(,a . ,rec))
-                 (appendo d r rec)))))
-```
-
 In some sense, `listo` is a projection of the first parameter of `appendo`. Consider the following statements. They are equivalent up to ordering.
 
-```scheme
+```
 (run* (q) (listo q))
 
 (run* (q) (fresh (y z) (appendo q y z)))
@@ -31,7 +14,7 @@ In some sense, `listo` is a projection of the first parameter of `appendo`. Cons
 
 In fact this third statement is also equivalent.
 
-```scheme
+```
 (run* (q) (listo q)
           (fresh (y z) (appendo q y z)))
 ```
@@ -58,11 +41,11 @@ Consider the following relations:
 ```
 
 Any `q` that satisfies `(unary-eveno q)` also must satisfy `(unary-naturalo q)`. Equivalently,
-```scheme
+```
 (run* (q) (unary-eveno q))
 ```
 is a strict subset of
-```scheme
+```
 (run* (q) (unary-naturalo q))
 ```
 up to ordering.
@@ -98,10 +81,12 @@ Finally consider:
   (== #t #f))
 ```
 Every 1-argument relation is a selection of `topo`, and `bottomo` is a selection of every 1-argument relation, since:
-```scheme
-(run* (q) (topo q)) => ((_0))
+```
+> (run* (q) (topo q))
+((_0))
 
-(run* (q) (bottomo q)) => ()
+> (run* (q) (bottomo q))
+()
 ```
 
 And this is a clue to how free variables should fit into all this: they should act as variables for all values, where values are a recursive data type defined as integers, booleans, symbols, and pairs of values.
