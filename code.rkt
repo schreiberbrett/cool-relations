@@ -583,6 +583,33 @@
   (appendo x y x+y)
   (appendo x-y y x))
 
+;; .\8-Implementing-miniKanren\1-Dovetailing-Streams.md
+(define (dovetail $x $y)
+  (let loop (($x $x)      ($y $y)
+             (seen-x '()) (seen-y '())
+             (turn 'x))
+    (cond ((and (null? $x) (null? $y)) '())
+
+          ((and (null? $x) (equal? turn 'x)) (loop '() $y seen-x seen-y 'y))
+          ((and (null? $y) (equal? turn 'y)) (loop $x '() seen-x seen-y 'x))
+
+          ((procedure? $x) (λ () (loop ($x) $y  seen-x seen-y turn)))
+          ((procedure? $y) (λ () (loop  $x ($y) seen-x seen-y turn)))
+          
+          ((equal? turn 'x) (append (map (λ (y) (cons (car $x) y)) seen-y)
+                                    (loop (cdr $x) $y (cons (car $x) seen-x) seen-y 'y)))
+          ((equal? turn 'y) (append (map (λ (x) (cons x (car $y))) seen-x)
+                                    (loop $x (cdr $y) seen-x (cons (car $y) seen-y) 'x))))))
+
+(define (count-up n)
+  (cons n (lambda () (count-up (+ n 1)))))
+
+
+(define (take n $)
+  (cond ((or (zero? n) (null? $)) '())
+        ((pair? $) (cons (car $) (take (- n 1) (cdr $))))
+        (else (take n ($)))))
+
 ;; .\9-Misc\1-A-Rule-of-Inference.md
 ;; .\9-Misc\2-Rational-Numbers.md
 ;; .\9-Misc\3-Utility-Definitions.md

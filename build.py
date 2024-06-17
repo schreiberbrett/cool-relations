@@ -28,6 +28,16 @@ B = TypeVar('B')
 T = TypeVar('T')
 ''')
 
+file['java'].write('''
+import java.util.Iterator;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Map;
+import java.util.NoSuchElementException;
+''')
+
 # Look for markdown files in all subdirectories, in any order.
 # Copy code blocks into their corresponding files
 

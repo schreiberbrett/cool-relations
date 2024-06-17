@@ -1,3 +1,11 @@
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Map;
+import java.util.NoSuchElementException;
 // .\README.md
 // .\0-Types\0-Intro.md
 // .\0-Types\1-Basic-Types.md
@@ -28,6 +36,82 @@
 // .\7-Techniques\1-Fresh-Tagging.md
 // .\7-Techniques\2-Polymorphism-in-miniKanren.md
 // .\7-Techniques\3-One-to-One-Relationships.md
+// .\8-Implementing-miniKanren\1-Dovetailing-Streams.md
+public class Dovetail<A, B>
+implements Iterator<Map.Entry<A, B>> {
+    private Iterator<A> iterA;
+    private Iterator<B> iterB;
+    private Queue<Map.Entry<A, B>> queue;
+    private boolean turnA;
+    private List<A> seenA;
+    private List<B> seenB;
+
+    public Dovetail(
+        Iterator<A> _iterA,
+        Iterator<B> _iterB
+    ) {
+        iterA = _iterA;
+        iterB = _iterB;
+        queue = new LinkedList<>();
+        turnA = true;
+        seenA = new ArrayList<>();
+        seenB = new ArrayList<>();
+    }
+
+    public boolean hasNext() {
+        return
+            iterA.hasNext() ||
+            iterB.hasNext() ||
+            !queue.isEmpty();
+    }
+
+    public Map.Entry<A, B> next() {
+        if (!this.hasNext()) {
+            throw new NoSuchElementException();
+        }
+
+        if (!queue.isEmpty()) {
+            return queue.remove();
+        }
+
+        if (turnA && iterA.hasNext()) {
+            var a = iterA.next();
+            for (var b : seenB) {
+                queue.add(Map.entry(a, b));
+            }
+            seenA.add(a);
+        } else if (iterB.hasNext()) {
+            var b = iterB.next();
+            for (var a : seenA) {
+                queue.add(Map.entry(a, b));
+            }
+            seenB.add(b);
+        }
+
+        turnA = !turnA;
+
+        return this.next();
+    }
+}
+
+public class CountUp
+implements Iterator<Integer> {
+    private int counter;
+
+    public CountUp() {
+        counter = 0;
+    }
+
+    public boolean hasNext() {
+        return true;
+    }
+
+    public Integer next() {
+        counter++;
+        return counter - 1;
+    }
+}
+
 // .\9-Misc\1-A-Rule-of-Inference.md
 // .\9-Misc\2-Rational-Numbers.md
 // .\9-Misc\3-Utility-Definitions.md

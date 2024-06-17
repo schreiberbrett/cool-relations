@@ -46,6 +46,34 @@ def concrete_product(l: List[List[T]]) -> List[List[T]]:
 # .\7-Techniques\1-Fresh-Tagging.md
 # .\7-Techniques\2-Polymorphism-in-miniKanren.md
 # .\7-Techniques\3-One-to-One-Relationships.md
+# .\8-Implementing-miniKanren\1-Dovetailing-Streams.md
+def dovetail(
+    iterA: Iterator[A],
+    iterB: Iterator[B]
+) -> Iterator[Tuple[A, B]]:
+    hasA = True
+    hasB = True
+
+    seenA: List[A] = []
+    seenB: List[B] = []
+
+    while hasA or hasB:
+        if hasA:
+            try:
+                a = next(iterA)
+                yield from (a, b for b in seenB)
+                seenA.append(a)
+            except StopIteration:
+                hasA = False
+
+        if hasB:
+            try:
+                b = next(iterB)
+                yield from (a, b for a in seenA)
+                seenB.append(b)
+            except StopIteration:
+                hasB = False
+
 # .\9-Misc\1-A-Rule-of-Inference.md
 # .\9-Misc\2-Rational-Numbers.md
 # .\9-Misc\3-Utility-Definitions.md
