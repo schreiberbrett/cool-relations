@@ -20,11 +20,11 @@ file['racket'].write('''
 ''')
 
 file['python'].write('''
-from typing import List, Set, Tuple, Dict, TypeVar
+from typing import List, Set, Tuple, Dict, TypeVar, Iterator
 from dataclasses import dataclass
                   
-A = TypeVar('A')
-B = TypeVar('B')
+X = TypeVar('X')
+Y = TypeVar('Y')
 T = TypeVar('T')
 ''')
 

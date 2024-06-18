@@ -27,21 +27,58 @@ def dovetail(
         if hasX:
             try:
                 x = next(iterX)
-                yield from (x, y for y in seenY)
-                seenA.append(x)
+                yield from ((x, y) for y in seenY)
+                seenX.append(x)
             except StopIteration:
                 hasX = False
 
         if hasY:
             try:
                 y = next(iterY)
-                yield from (x, y for x in seenX)
+                yield from ((x, y) for x in seenX)
                 seenY.append(y)
             except StopIteration:
                 hasY = False
 ```
 
-Essentially, this is an iterative round-robin algorithm which first tries to find the next $a$ from the infinite set of $A$, and then tries to find the next $b$ from the infinite set of $B$. If one of the sets is finite and is exhausted, it proceeds on the other set. If both sets are exhausted, the generator halts.
+Essentially, this is an iterative round-robin algorithm which first tries to find the next $a$ from the infinite set of $A$, and then tries to find the next $b$ from the infinite set of $B$. If one of the sets is finite and is exhausted, it proceeds on the other set. If both sets are exhausted, the generator halts. Let's test it.
+
+```python
+def count_up():
+    i = 0
+    while True:
+        yield i
+        i += 1
+```
+
+Testing it:
+
+```
+>>> x = dovetail(count_up(), count_up())
+>>> for _ in range(20):
+...     print(next(x))
+... 
+(0, 0)
+(1, 0)
+(0, 1)
+(1, 1)
+(2, 0)
+(2, 1)
+(0, 2)
+(1, 2)
+(2, 2)
+(3, 0)
+(3, 1)
+(3, 2)
+(0, 3)
+(1, 3)
+(2, 3)
+(3, 3)
+(4, 0)
+(4, 1)
+(4, 2)
+(4, 3)
+```
 
 ## Java
 
@@ -69,10 +106,7 @@ implements Iterator<Map.Entry<X, Y>> {
     private List<X> seenX;
     private List<Y> seenY;
 
-    public Dovetail(
-        Iterator<X> _iterX,
-        Iterator<Y> _iterY
-    ) {
+    public Dovetail(Iterator<X> _iterX, Iterator<Y> _iterY) {
         iterX = _iterX;
         iterY = _iterY;
         queue = new LinkedList<>();
@@ -144,9 +178,9 @@ And the result:
 
 ```
 jshell> var x = new Dovetail<>(new CountUp(), new CountUp());
-x ==> Dovetail@77a567e1
+x ==> Dovetail@b1bc7ed
 
-jshell> for (int i = 0; i < 10; i++) { System.out.println(x.next()); }
+jshell> for (int i = 0; i < 20; i++) { System.out.println(x.next()); }
 0=0
 1=0
 0=1
@@ -157,6 +191,16 @@ jshell> for (int i = 0; i < 10; i++) { System.out.println(x.next()); }
 1=2
 2=2
 3=0
+3=1
+3=2
+0=3
+1=3
+2=3
+3=3
+4=0
+4=1
+4=2
+4=3
 ```
 
 ## Scheme
@@ -187,7 +231,6 @@ Helpers:
 ```scheme
 (define (count-up n)
   (cons n (lambda () (count-up (+ n 1)))))
-
 
 (define (take n $)
   (cond ((or (zero? n) (null? $)) '())
