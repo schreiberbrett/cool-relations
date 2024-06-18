@@ -6,7 +6,7 @@ Loosely, miniKanren *goals* return infinite streams of substitutions. One such g
 
 Since `conj` outputs all unified substitutions and drop all contradictory ones, and since miniKanren promises a complete solution set, `conj` must, at some level, compare all pairs of streams.
 
-This is equivalent to the Cartesian product on two infinite sets. An established way to compute this is a technique called "dovetailing", which records the seen values from each stream and carefully pulls the next element $a$ from stream $X$, and outputs pairs $(x, y)$ for all previously seen values of $Y$. The same argument can be made with $X$ and $Y$ exchanged to perform the complete dovetail.
+This is equivalent to the Cartesian product on two infinite sets. An established way to compute this is a technique called "dovetailing", which records the seen values from each stream and carefully pulls the next element $x$ from stream $X$, and outputs pairs $(x, y)$ for all previously seen values of $Y$. The same argument can be made with $X$ and $Y$ exchanged to perform the complete dovetail.
 
 ## Python
 
