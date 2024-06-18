@@ -6,7 +6,7 @@ Loosely, miniKanren *goals* return infinite streams of substitutions. One such g
 
 Since `conj` outputs all unified substitutions and drop all contradictory ones, and since miniKanren promises a complete solution set, `conj` must, at some level, compare all pairs of streams.
 
-This is equivalent to the Cartesian product on two infinite sets. An established way to compute this is a technique called "dovetailing", which records the seen values from each stream and carefully pulls the next element $a$ from stream $A$, and outputs pairs $(a, b)$ for all previously seen values of $B$. The same argument can be made with $A$ and $B$ exchanged to perform the complete dovetail.
+This is equivalent to the Cartesian product on two infinite sets. An established way to compute this is a technique called "dovetailing", which records the seen values from each stream and carefully pulls the next element $a$ from stream $X$, and outputs pairs $(x, y)$ for all previously seen values of $Y$. The same argument can be made with $X$ and $Y$ exchanged to perform the complete dovetail.
 
 ## Python
 
@@ -14,31 +14,31 @@ Python's `yield` keyword is a convenient syntax for operating on streams, which 
 
 ```python
 def dovetail(
-    iterA: Iterator[A],
-    iterB: Iterator[B]
-) -> Iterator[Tuple[A, B]]:
-    hasA = True
-    hasB = True
+    iterX: Iterator[X],
+    iterY: Iterator[Y]
+) -> Iterator[Tuple[X, Y]]:
+    hasX = True
+    hasY = True
 
-    seenA: List[A] = []
-    seenB: List[B] = []
+    seenX: List[X] = []
+    seenY: List[Y] = []
 
-    while hasA or hasB:
-        if hasA:
+    while hasX or hasY:
+        if hasX:
             try:
-                a = next(iterA)
-                yield from (a, b for b in seenB)
-                seenA.append(a)
+                x = next(iterX)
+                yield from (x, y for y in seenY)
+                seenA.append(x)
             except StopIteration:
-                hasA = False
+                hasX = False
 
-        if hasB:
+        if hasY:
             try:
-                b = next(iterB)
-                yield from (a, b for a in seenA)
-                seenB.append(b)
+                y = next(iterY)
+                yield from (x, y for x in seenX)
+                seenY.append(y)
             except StopIteration:
-                hasB = False
+                hasY = False
 ```
 
 Essentially, this is an iterative round-robin algorithm which first tries to find the next $a$ from the infinite set of $A$, and then tries to find the next $b$ from the infinite set of $B$. If one of the sets is finite and is exhausted, it proceeds on the other set. If both sets are exhausted, the generator halts.
@@ -60,35 +60,35 @@ If we take `yield` statements in Python to mean a pause in execution, then when 
 This makes the definition of `hasNext()` straightforward: the Cartesian iterator has a next value if it currently has a queue of pairs to yield, or if either one of its sources has a next value.
 
 ```java
-public class Dovetail<A, B>
-implements Iterator<Map.Entry<A, B>> {
-    private Iterator<A> iterA;
-    private Iterator<B> iterB;
-    private Queue<Map.Entry<A, B>> queue;
-    private boolean turnA;
-    private List<A> seenA;
-    private List<B> seenB;
+public class Dovetail<X, Y>
+implements Iterator<Map.Entry<X, Y>> {
+    private Iterator<X> iterX;
+    private Iterator<Y> iterY;
+    private Queue<Map.Entry<X, Y>> queue;
+    private boolean turnX;
+    private List<X> seenX;
+    private List<Y> seenY;
 
     public Dovetail(
-        Iterator<A> _iterA,
-        Iterator<B> _iterB
+        Iterator<X> _iterX,
+        Iterator<Y> _iterY
     ) {
-        iterA = _iterA;
-        iterB = _iterB;
+        iterX = _iterX;
+        iterY = _iterY;
         queue = new LinkedList<>();
-        turnA = true;
-        seenA = new ArrayList<>();
-        seenB = new ArrayList<>();
+        turnX = true;
+        seenX = new ArrayList<>();
+        seenY = new ArrayList<>();
     }
 
     public boolean hasNext() {
         return
-            iterA.hasNext() ||
-            iterB.hasNext() ||
+            iterX.hasNext() ||
+            iterY.hasNext() ||
             !queue.isEmpty();
     }
 
-    public Map.Entry<A, B> next() {
+    public Map.Entry<X, Y> next() {
         if (!this.hasNext()) {
             throw new NoSuchElementException();
         }
@@ -97,21 +97,21 @@ implements Iterator<Map.Entry<A, B>> {
             return queue.remove();
         }
 
-        if (turnA && iterA.hasNext()) {
-            var a = iterA.next();
-            for (var b : seenB) {
-                queue.add(Map.entry(a, b));
+        if (turnX && iterX.hasNext()) {
+            var x = iterX.next();
+            for (var y : seenY) {
+                queue.add(Map.entry(x, y));
             }
-            seenA.add(a);
-        } else if (iterB.hasNext()) {
-            var b = iterB.next();
-            for (var a : seenA) {
-                queue.add(Map.entry(a, b));
+            seenX.add(x);
+        } else if (iterY.hasNext()) {
+            var y = iterY.next();
+            for (var x : seenX) {
+                queue.add(Map.entry(x, y));
             }
-            seenB.add(b);
+            seenY.add(y);
         }
 
-        turnA = !turnA;
+        turnX = !turnX;
 
         return this.next();
     }
