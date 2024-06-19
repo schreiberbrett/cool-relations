@@ -12,7 +12,7 @@
 
 <div id="inputs"></div>
 
-<button id="go">Solve</button>
+<button onclick="solve()">Solve</button>
 
 <table id="result"></table>
 
@@ -28,8 +28,14 @@ for (let i = 0; i < colors.length; i++) {
     inputs.appendChild(input);
 }
 
+function solve() {
+    let inputs = document.getElementsByTagName('input');
+    let nums = [];
+    for (let input of inputs) {
+        nums.push(parseInt(input.value))
+    }
 
-function solve(nums) {
+
     let total = 0;
     for (let num of nums) {
         total += num;
@@ -95,7 +101,7 @@ function solve(nums) {
     }
 
 
-    const result = recur(0, 0);
+    recur(0, 0);
 
     const table = document.getElementById('result');
     table.innerHTML = '';
@@ -110,7 +116,6 @@ function solve(nums) {
 
         table.appendChild(tr);
     }
-
 }
 
 
