@@ -11,9 +11,6 @@
 </style>
 
 <div id="inputs"></div>
-
-<button onclick="solve()">Solve</button>
-
 <table id="result"></table>
 
 <script>
@@ -25,6 +22,7 @@ for (let i = 0; i < colors.length; i++) {
     input.type = 'number';
     input.value = 0;
     input.style.backgroundColor = colors[i];
+    input.onchange = solve;
     inputs.appendChild(input);
 }
 
@@ -49,7 +47,7 @@ function solve() {
         }
     }
 
-    const height = factors[factors.length / 2];
+    const height = factors[Math.floor(factors.length / 2)];
     const width = total / height;
 
     const count = nums.map(x => 0);
