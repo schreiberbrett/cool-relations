@@ -26,7 +26,7 @@ This relation can be expressed as two riffles like so:
             (== l2 `(,a2 . ,d2))
             
             (conde ((== a1 a2) (== rec diff))
-                   ((== a1 b1) (== a2 b0) (+1o rec diff))
-                   ((== a1 b0) (== a2 b1) (+1o diff rec)))
+                   ((== a1 b1) (== a2 b0) (+1o/int rec diff))
+                   ((== a1 b0) (== a2 b1) (+1o/int diff rec)))
             (equal-popcount-helpero b0 b1 d1 d2 rec)))))
 ```

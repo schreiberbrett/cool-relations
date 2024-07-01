@@ -1,105 +1,131 @@
 # The Majority Relation
 
-I really want to describe a relation between a value `x` and a list `l` where `x` is the majority (more than half) of all values in `l`.
+Consider a relation over a value `x` and a list `l` where `x` is the majority (more than half) of all values in `l`. This has a natural correspondence to the majority gate in circuit complexity.
 
-An approach I've found works well is to use a helper relation `count-differenceo` that subtracts the number of occurrences of `x` from the number of non-occurrences of `x` in `l`. It works by recurring through `l` with an integer `counter` variable. Anytime `x` is encountered in `l`, increment the counter. Otherwise, decrement the counter. `majorityo` only succeeds if the difference is positive.
-
-Notice I don't need a disequality check in the second `conde` branch, because as long as the majority value is more than half, there can be some "defectors".
+A list `l` has a majority element `x` when more than half of its elements unify to `x`.
 
 ```scheme
-(defrel (majorityo x l)
+(defrel (majorityo/diseq x l)
   (fresh (difference)
-    (poso difference)
-    (count-differenceo x l difference)))
+    (poso/int difference)
+    (count-differenceo/diseq x l difference)))
 ```
 
-Notice that `-1o` is really `+1o` with its arguments swapped.
+THe relation `(count-differenceo/diseq x l c)` asserts that the integer `c` is the number of elements unifiable with `x` minus the number of elements in `l` not unifiable with `x`.
 
 ```scheme
-(defrel (-1o x x-1)
-  (+1o x-1 x))
-```
-
-That mean there is a `+1o` in both `conde` branches. It can be factored out by introducing placeholder logic variables.
-
-```scheme
-(defrel (count-differenceo x l c)
-  (conde ((== l '()) (== c '()))
-         ((fresh (a d rec alpha1 alpha2)
+(defrel (count-differenceo/diseq x l c)
+  (conde ((== l '()) (== c '(nat ())))
+         ((fresh (a d rec)
             (== l `(,a . ,d))
-            (conde ((== a x) (== `(,alpha1 ,alpha2) `(,rec ,c)))
-                   ((== `(,alpha1 ,alpha2) `(,c ,rec))))
-            (+1o alpha1 alpha2)
-            (count-differenceo x d rec)))))
+            (conde ((==  a x) (+1o/int rec c))
+                   ((=/= a x) (+1o/int c rec)))
+            (count-differenceo/diseq x d rec)))))
 ```
 
-But how should integers be represented in miniKanren, and how should `+1o` be defined over them?
-
-Today, I was interested in writing the successor relation over a representation of the integers in miniKanren.
-
-Here was my first attempt: Encode the integers like so:
+The results of running `majorityo/diseq` on a fresh list is a combinatorial explosion.
 
 ```
-...
- 4: '(+ + + +)
- 3: '(+ + +)
- 2: '(+ +)
- 1: '(+)
- 0: '()
--1: '(-)
--2: '(- -)
--3: '(- - -)
--4: '(- - - -)
-...
+> (run 10 (q) (majorityo/diseq 'x q))
+'((x)
+  (x x)
+  ((_.0 x x) (=/= ((_.0 x))))
+  (x x x)
+  ((x _.0 x) (=/= ((_.0 x))))
+  ((x x _.0) (=/= ((_.0 x))))
+  ((_.0 x x x) (=/= ((_.0 x))))
+  (x x x x)
+  ((x x _.0 x) (=/= ((_.0 x))))
+  ((x x x _.0) (=/= ((_.0 x)))))
 ```
 
-Then the successor relation can be described as follows:
+One way to mitigate this is to recognize majorities only up to the deciding vote, and leave all other list elements unconstrained and fresh, because they may be additions to the majority.
 
 ```scheme
-(defrel (+1o x x+1)
-  (conde ((== x   `(- . ,x+1)))
-         ((== x+1 `(+ . ,x)))))
+(defrel (majorityo/monotonic x l)
+  (fresh (difference p)
+    (conde ((== difference '(nat (s))))
+           ((== difference '(nat (s s)))))
+    (count-differenceo/trs2e x l difference)))
 ```
 
-But this is incorrect. The below query says that there are two predecessors of 2. And the first result is not a well-formed integer.
 
-```
-> (run* (q) (+1o q '(+ +)))
-'((- + +)
-  (+))
-```
+This requires `count-differenceo/trs2e`. It has this name because it and its inner relations only use `==`, never `=/=`. Disequality is not supported in TRS2E miniKanren.
 
-Using a different representation of integers, which uses a unary number represented as a list, plus the tags `'(1 0 0)`, `'(0 1 0)`, and `'(0 0 1)` representing positive, zero, and negative, respectively.
-
-```
-...
- 4: '((1 0 0) (o o o o))
- 3: '((1 0 0) (o o o))
- 2: '((1 0 0) (o o))
- 1: '((1 0 0) (o))
- 0: '((0 1 0) ())
--1: '((0 0 1) (o))
--2: '((0 0 1) (o o))
--3: '((0 0 1) (o o o))
--4: '((0 0 1) (o o o o))
-...
-```
-
-There are two cases of the successor relation:
-1. If a number is nonnegative, then its successor must be positive, with one additional unary digit.
-2. If a number is negative, then its successor must not be positive, with one less unary digit.
 ```scheme
-(defrel (+1o2 x x+1)
-  (fresh (p z n l)
-    (conde ((== x `((,p ,z 0) ,l)) (== x+1 `((1 0 0) (o . ,l))))
-           ((== x `((0 0 1) (o . ,l))) (== x+1 `((0 ,z ,n) ,l))))))
+(defrel (count-differenceo/trs2e x l c)
+  (conde ((== l '()) (== c '(nat ())))
+         ((fresh (a d rec)
+            (== l `(,a . ,d))
+            (conde ((==  a x) (+1o/int rec c))
+                   ((+1o/int c rec)))
+            (count-differenceo/trs2e x d rec)))))
 ```
 
-Lets see how this fares:
+And its results:
 
 ```
-> (run* (q) (+1o2 q '((1 0 0) (o o))))
-'(((_.0 _.1 0) (o)))
+> (run 15 (q) (majorityo/monotonic 'x q))
+'((x)
+  (x x)
+  (_.0 x x)
+  (x _.0 x)
+  (x x _.0)
+  (_.0 x x x)
+  (x _.0 x x)
+  (x x _.0 x)
+  (x x x _.0)
+  (_.0 _.1 x x x)
+  (_.0 x _.1 x x)
+  (x _.0 _.1 x x)
+  (_.0 x x _.1 x)
+  (x _.0 x _.1 x)
+  (x x _.0 _.1 x))
 ```
 
-One result!
+Here is where they differ:
+
+```
+> (run* (q) (majorityo/diseq     'x '(x x x x x)))
+'(_.0)
+> (run* (q) (majorityo/monotonic 'x '(x x x x x)))
+'(_.0 _.0 _.0 _.0 _.0 _.0 _.0 _.0 _.0 _.0)
+```
+
+Tabling could solve this. Another way to solve this is by using `project` to probe for an existing majority and succeeding once.
+
+```scheme
+(defrel (majorityo/project x l)
+  (listo l)
+  (project (x l)
+    (if (> (length (filter (lambda (e)      (equal? e x))  l))
+           (length (filter (lambda (e) (not (equal? e x))) l)))
+        (== #t #t)
+        (majorityo/monotonic x l))))
+```
+
+This gives the best of both worlds. But `majorityo/project` might fail on some other query.
+
+```
+> (run* (q) (majorityo/project 'x '(x x x x x)))
+'(_.0)
+"code.rkt"> (run 15 (l) (majorityo/project 'x l))
+'((x)
+  (x x)
+  (_.0 x x)
+  (x _.0 x)
+  (x x _.0)
+  (_.0 x x x)
+  (x _.0 x x)
+  (x x _.0 x)
+  (x x x _.0)
+  (_.0 _.1 x x x)
+  (_.0 x _.1 x x)
+  (x _.0 _.1 x x)
+  (_.0 x x _.1 x)
+  (x _.0 x _.1 x)
+  (x x _.0 _.1 x))
+```
+
+
+TODO: Write a version of `count-differenceo/trs2e` with `conda` or `condu` and see how it fares. Add `conda` and `condu` to `faster-minikanren`.

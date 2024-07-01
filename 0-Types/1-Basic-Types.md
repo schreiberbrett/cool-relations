@@ -4,10 +4,20 @@
 
 ```scheme
 (defrel (listo l)
-  (conde ((== l '())
+  (conde ((== l '()))
          ((fresh (a d)
             (== l `(,a . ,d))
-            (listo d))))))
+            (listo d)))))
+```
+
+```scheme
+(defrel (length-parityo l p)
+  (conde ((== l '()) (== p 'even))
+         ((fresh (a d rec)
+            (== l `(,a . ,d))
+            (conde ((== p 'odd)  (== rec 'even))
+                   ((== p 'even) (== rec 'odd)))
+            (length-parityo d rec)))))
 ```
 
 ## Unary natural numbers:

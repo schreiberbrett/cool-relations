@@ -40,6 +40,15 @@ The classics
               (list-refo d n-1 val))))))
 ```
 
+```scheme
+(defrel (lengtho/peano l n)
+  (conde ((== l '()) (== n '()))
+         ((fresh (a d n-1)
+            (== l `(,a . ,d))
+            (== n `(s . ,n-1))
+            (lengtho/peano d n-1)))))
+```
+
 # `build-num` analog for building nats
 
 ```scheme

@@ -8,23 +8,23 @@ Below is my attempt to define this relationship in miniKanren. I was able to get
 
 First, the naive version:
 ```scheme
-(defrel (naive-prime-factorso n l)
+(defrel (prime-factorso/1 n l)
   (ordered-listo <=o l)
   (all-primeo l)
   (producto l n))
 ```
 Results:
 ```
-> (run 1 (q) (naive-prime-factorso q (map build-num '(2 3 5))))
+> (run 1 (q) (prime-factorso/1 q (map build-num '(2 3 5))))
 '((0 1 1 1 1))
-> (run 1 (q) (naive-prime-factorso (build-num 13) q))
+> (run 1 (q) (prime-factorso/1 (build-num 13) q))
 ...
 ```
 The first query succeeds with 30. The second query may halt at some point, but I am impatient.
 
 The calls to `ordered-listo`, `all-primeo`, and `producto` must each recur through `l`. There's a way to rewrite the relation that only recurs through `l` once. It's a boring mechanical step. I wish a miniKanren compiler could do it.
 ```scheme
-(defrel (prime-factorso n l)
+(defrel (prime-factorso/2 n l)
   (conde ((== l '()) (== n '(1)))
          ((fresh (a d a/n)
             (== l `(,a . ,d))
@@ -34,7 +34,7 @@ The calls to `ordered-listo`, `all-primeo`, and `producto` must each recur throu
                    ((fresh (ad dd)
                       (== d `(,ad . ,dd))
                       (<=o a ad)
-                      (prime-factorso a/n d))))))))
+                      (prime-factorso/2 a/n d))))))))
 ```
 
 Some quick and dirty conjunction analysis:
@@ -45,17 +45,17 @@ Every one-to-one relation should strive to be as reliable as `==` and `=/=`.
 
 Results:
 ```
-> (run 1 (q) (prime-factorso q (map build-num '(2 3 5))))
+> (run 1 (q) (prime-factorso/2 q (map build-num '(2 3 5))))
 '((0 1 1 1 1))
 ```
 Runs backwards just fine, same as the naive version. But this version can run forwards:
 ```
-> (run 1 (q) (prime-factorso (build-num 156) q))
+> (run 1 (q) (prime-factorso/2 (build-num 156) q))
 '(((0 1) (0 1) (1 1) (1 0 1 1)))
 ```
 The prime factors of 156 are 2, 2, 3, and 13. Are there any other ways to prime factorize 156?
 ```
-> (run* (q) (prime-factorso (build-num 156) 
+> (run* (q) (prime-factorso/2 (build-num 156) 
 q))
 '(((0 1) (0 1) (1 1) (1 0 1 1)))
 ```
