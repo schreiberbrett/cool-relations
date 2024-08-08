@@ -126,7 +126,7 @@ Very slow, maybe specializing `(pluso '(1 1) n-3 n)` can help.
 ```scheme
 (define (h n)
   (length (run* (q)
-    (lengtho q (build-num n))
+    (lengtho/trs2e q (build-num n))
     (fresh-multiple-of-threeo q))))
 ```
 

@@ -1,4 +1,4 @@
 #!/bin/bash
 
 python3 build.py
-racket -i -e "(enter! \"code.rkt\")"
+racket -i -e "(enter! \"tangled.rkt\")"

@@ -1,10 +1,10 @@
 # One-to-one relationships
 
-miniKanren can model one-to-one relationships.
+miniKanren can model one-to-one relationships. In fact, the best example of this is `==`. We trust that `==` either succeeds once, or fails. It never is the cause of divergence. Any implementation of a one-to-one relationship should have this behavior.
 
 
 ## Fahrenheit and Celsius
-For example, every Fahrenheit temperature has exactly one corresponding Celsius temperature.
+Eevery Fahrenheit temperature has exactly one corresponding Celsius temperature.
 
 ```math
 c = (f - 32) * 5/9 \\
@@ -33,7 +33,8 @@ Per [Wikipedia](https://en.wikipedia.org/wiki/G%C3%B6del_numbering#mw-content-te
 
 ## Unary and Binary Nats
 
-todo
+Two important representations of natural numbers are Peano numbers and Oleg numbers. Their correspondence is a special case of the relationship between a list and its length. See [6-Tricky-Relations/1-Length.md].
+
 
 ## Prime factorization
 

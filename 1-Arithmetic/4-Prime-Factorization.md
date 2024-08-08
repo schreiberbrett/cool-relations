@@ -113,3 +113,37 @@ Throwaway miniKanren definitions:
             (primeo a)
             (all-primeo d)))))
 ```
+
+
+Cantor's pairing function:
+
+```math
+k = \frac{(i + j)(i + j + 1)}{2} + j \\
+2k = (i + j)(i + j + 1) + 2j
+```
+
+```scheme
+(defrel (pairingo/cantor/1 i j k)
+  (fresh (i+j i+j+1 <i+j>*<i+j+1>)
+    (pluso i j i+j)
+    (+1o i+j i+j+1)
+    (pluso `(0 . ,j) <i+j>*<i+j+1> `(0 . ,k))
+    (*o i+j i+j+1 <i+j>*<i+j+1>)))
+```
+
+Alternatively,
+
+```math
+k = T_{i + j} + j
+```
+
+```scheme
+(defrel (pairingo/cantor/2 i j k)
+  (fresh (i+j T_i+j)
+    (pluso i j i+j)
+    (triangleo i+j T_i+j)
+    (pluso T_i+j j k)))
+```
+
+A pairing function inspired by [Minimum Complexity Pairing Functions (Regan 1990)](https://doi.org/10.1016/0022-0000(92)90027-G).
+

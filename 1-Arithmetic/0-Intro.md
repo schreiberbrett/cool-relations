@@ -36,6 +36,24 @@ This technique is used to assert that one Peano nat is double another in miniKan
             (*2o/peano n-1 2n-2)))))
 ```
 
+# Oleg numbers
+
+Oleg numbers are well-covered in the literature. Here are some helpers.
+
+## Successorship
+
+```scheme
+(defrel (+1o n n+1)
+  (conde ((== n '()) (== n+1 '(1)))
+         ((fresh (a d)
+            (== n `(,a . ,d))
+            (conde ((== a 0) (poso d) (== n+1 `(1 . ,d)))
+                   ((fresh (d+1)
+                      (== a 1)
+                      (== n+1 `(0 . ,d+1))
+                      (+1o d d+1))))))))
+```
+
 
 # Integers
 

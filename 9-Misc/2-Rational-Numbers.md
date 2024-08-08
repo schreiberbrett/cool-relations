@@ -17,6 +17,12 @@ struct Rational multiply(struct Rational, struct Rational);
 
 Division is more difficult because of the impossibility of dividing by zero, even though zero is a perfectly fine rational number. It will be introduced later.
 
+A function to compute the greatest common divisor is also required sot that the rational numbers returned are in reduced form.
+
+```c
+int greatest_common_divisor(int, int);
+```
+
 # Rational numbers
 
 A rational number is any number that can be written as a *ratio* $\frac{a}{b}$ given whole numbers $a$ and $b$, known as the *numerator* and *denominator*. There are some other constraints (for example, the denominator cannot be zero), but those will be addressed later.
@@ -33,22 +39,6 @@ struct Rational {
 The sum of two rational numbers is also a rational number, as shown by this formula.
 
 $\frac{p_1}{q_1} + \frac{p_2}{q_2} = \frac{p_1q_2 + p_2q_1}{q_1q_2}$
-
-```c
-struct Rational add(struct Rational r1, struct Rational r2) {
-    int p1 = r1.numerator;
-    int q1 = r1.denominator;
-
-    int p2 = r2.numerator;
-    int q2 = r2.denominator;
-
-
-    return (struct Rational) {
-        .numerator = p1 * q2 + p2 * q1,
-        .denominator = q1 * q2
-    };
-}
-```
 
 But using the above formula directly can create fractions which need to be simplified. For example,
 
@@ -107,5 +97,17 @@ struct Rational multiply(struct Rational r1, struct Rational r2) {
         .numerator = p1 * p2,
         .denominator = q1 * q2
     });
+}
+```
+
+# Appendix
+
+```c
+int greatest_common_divisor(int a, int b) {
+    if (b == 0) {
+        return a;
+    }
+
+    return greatest_common_divisor(b, a % b);
 }
 ```
