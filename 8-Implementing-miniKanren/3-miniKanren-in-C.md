@@ -8,6 +8,14 @@ struct Thunk;
 struct Goal;
 struct Term;
 struct Substitution;
+struct RelDef;
+```
+
+Global variables:
+
+```c
+struct RelDef *reldefs;
+int varCount = 0;
 ```
 
 And functions
@@ -17,6 +25,10 @@ struct Stream* applyGoal(struct Goal *, struct Substitution *);
 struct Substitution* unify(struct Term *, struct Term *, struct Substitution *);
 bool occurs(struct Term *, struct Term *, struct Substitution *);
 struct Term *walk(struct Term *, struct Substitution *);
+bool equalTerms(struct Term *, struct Term *);
+struct Term *copyTerm(int, struct Term *);
+struct Goal *copyGoal(int, struct Goal *);
+struct Term *var(int);
 ```
 
 ## Streams and Thunks
@@ -141,8 +153,9 @@ struct Goal {
 
         // RELATE
         struct {
-            // TODO
-            int *todo;
+            int i;
+            int argc;
+            struct Term **argv;
         };
     };
 };
@@ -150,7 +163,16 @@ struct Goal {
 struct Goal *conj2(struct Goal *, struct Goal *);
 struct Goal *disj2(struct Goal *, struct Goal *);
 struct Goal *eq(struct Term *, struct Term *);
-struct Goal *relate(); // TODO
+struct Goal *relate(int, int, struct Term **); // TODO
+```
+
+A `RelDef` is an entry in the `reldefs` table, which associated an index to a `Goal`, along with a count of the number of variables that the goal uses.
+
+```c
+struct RelDef {
+    struct Goal *g;
+    int num_vars;
+};
 ```
 
 ```c
@@ -172,8 +194,25 @@ struct Stream* applyGoal(struct Goal *g, struct Substitution *s) {
                 : nonempty(newS, empty());
 
         case RELATE:
-            // TODO
-            return NULL;
+            // Lookup the relation definition
+            struct RelDef reldef = reldefs[g->i];
+
+            // copy the goal
+            struct Goal *copy = copyGoal(varCount, reldef.g);
+
+            // Use unification for binding
+            // chain conj2s to the beginning of the copied goal
+            struct Goal *curr = copy;
+            for (int i = 0; i < g->argc; i++) {
+                curr = conj2(
+                    eq(g->argv[i], var(i)),
+                    curr
+                );
+            }
+
+            varCount += reldef.num_vars;
+
+            return curr;
     }
 }
 ```
@@ -205,6 +244,13 @@ struct Term {
         };
     };
 };
+
+struct Term *var(int i) {
+    struct Term *result = malloc(sizeof(struct Term));
+    result->kind = VAR;
+    result->i = i;
+    return result;
+}
 ```
 
 ## Substitution
@@ -304,6 +350,98 @@ struct Substitution *unify(struct Term *u, struct Term *v, struct Substitution *
 }
 ```
 
+### Term equality
+
+```c
+bool equalTerms(struct Term *u, struct Term *v) {
+    if (u == v) {
+        return true;
+    }
+
+    if (u->kind != v->kind) {
+        return false;
+    }
+
+    switch (u->kind) {
+        case NIL:
+            return true;
+
+        case VAR:
+            return u->i == v->i;
+
+        case SYM:
+            return strcmp(u->s, v->s) == 0;
+
+        case PAIR:
+            return (
+                equalTerms(u->car, v->car) &&
+                equalTerms(u->cdr, v->cdr)
+            );
+    }
+}
+```
+
+## Invoking a defined relation
+
+Apart from the defunctionalization of goals and streams, which follows the same path that the First-order miniKanren paper did, this C version also defunctionalizes relation definitions.
+
+When a goal of kind `RELATE` is encountered, the definition of the relation must be looked up at index `i` in an array containing all the relation definitions.
+
+A relation definition is a compound term of a `Goal`, an `arity`, and a count `num_vars` of how many logic variables it uses.
+
+A relation definition has parameters: logic variables which get constrained between each other. These parameters are included in this count, therefore `arity <= num_vars`. Since a relation definitions exists as a self-contained chunk of miniKanren code, any logic variables in its inner `Goal` must have an index `i` such that `0 <= i < num_vars`.
+
+So when a relation definition gets copied over within `applyGoal`, all its logic variables must be introduced at the same time, shifted by the current count of logic variables in the program.
+
+```c
+struct Term *copyTerm(int offset, struct Term *t) {
+    return (t->kind == VAR) ? var(t->i + offset) : t;
+}
+
+```
+
+```c
+struct Goal *copyGoal(int offset, struct Goal *g) {
+    switch (g->kind) {
+        case CONJ2:
+            return conj2(
+                copyGoal(offset, g->g1),
+                copyGoal(offset, g->g2)
+            );
+
+        case DISJ2:
+            return disj2(
+                copyGoal(offset, g->g1),
+                copyGoal(offset, g->g2)
+            );
+
+        case EQ:
+            return eq(
+                copyTerm(offset, g->u),
+                copyTerm(offset, g->v)
+            );
+
+        case RELATE:
+            struct Term **newArgv = malloc(sizeof(struct Term *) * g->argc);
+
+            for (int i = 0; i < g->argc; i++) {
+                newArgv[i] = copyTerm(offset, g->argv[i]);
+            }
+
+            return relate(
+                g->i,
+                g->argc,
+                newArgv
+            );
+    }
+}
+```
+
+
+First, the relation definition exists as self-contained code -- it has no free variables. That is good! But that means any logic variables referenced within, either the parameters or logic variables introduced with `fresh` are indexed independently of the actual number of logic variables in the running program.
+
+So when the relation definition gets copied over and inlined, its logic variables must offset by the current count of runtime logic variables.
+
 ## Running a goal, taking from a stream, and reifying
 
 In TRS2E, the process of runnnig a goal `n` times, taking from a stream, and mapping to reified results are split into multiple functions, but they only ever get called together. This implementation performs all three steps in one pass.
@@ -312,8 +450,9 @@ In TRS2E, the process of runnnig a goal `n` times, taking from a stream, and map
 void runAndReify(int n, struct Goal *g) {
     struct Substitution emptyS = { .isEmpty = true };
 
-    struct Stream *s = applyGoal(g, emptyS);
+    struct Stream *s = applyGoal(g, &emptyS);
 
+    int i = 0;
     while (true) {
         if (i == n + 1) {
             break;
@@ -332,11 +471,10 @@ void runAndReify(int n, struct Goal *g) {
                 break;
 
             case DELAYED:
-                s = applyStream(s);
+                s = pull(s->thunk);
         }
     }
 }
-
 ```
 
 ## Appendix
@@ -346,7 +484,7 @@ Constructors
 Empty streams are never mutated, so all empty streams can point to the same area in memory. So the `empty()` constructor can simply return a reference to the singleton empty stream.
 
 ```c
-struct Stream singletonEmpty = { isEmpty: true };
+struct Stream singletonEmpty = { .kind = EMPTY };
 
 struct Stream* empty() {
     return &singletonEmpty;
@@ -414,8 +552,11 @@ struct Goal *eq(struct Term *u, struct Term *v) {
     return result;
 }
 
-struct Goal *relate() {
-    // TODO
-    return NULL;
+struct Goal *relate(int i, int argc, struct Term **argv) {
+    struct Goal *result = malloc(sizeof(struct Goal));
+    result->i = i;
+    result->argc = argc;
+    result->argv = argv;
+    return result;
 }
 ```

@@ -1,6 +1,7 @@
 
 #include <stdlib.h>
-#include <stdio.h>       
+#include <stdio.h>
+#include <string.h>
 #include <stdbool.h>         
 // .\README.md
 // .\0-Types\0-Intro.md
@@ -41,11 +42,19 @@ struct Thunk;
 struct Goal;
 struct Term;
 struct Substitution;
+struct RelDef;
+
+struct RelDef *reldefs;
+int varCount = 0;
 
 struct Stream* applyGoal(struct Goal *, struct Substitution *);
 struct Substitution* unify(struct Term *, struct Term *, struct Substitution *);
 bool occurs(struct Term *, struct Term *, struct Substitution *);
 struct Term *walk(struct Term *, struct Substitution *);
+bool equalTerms(struct Term *, struct Term *);
+struct Term *copyTerm(int, struct Term *);
+struct Goal *copyGoal(int, struct Goal *);
+struct Term *var(int)
 
 struct Stream {
     enum {
@@ -154,8 +163,9 @@ struct Goal {
 
         // RELATE
         struct {
-            // TODO
-            int *todo;
+            int i;
+            int argc;
+            struct Term **argv;
         };
     };
 };
@@ -163,7 +173,12 @@ struct Goal {
 struct Goal *conj2(struct Goal *, struct Goal *);
 struct Goal *disj2(struct Goal *, struct Goal *);
 struct Goal *eq(struct Term *, struct Term *);
-struct Goal *relate(); // TODO
+struct Goal *relate(int, int, struct Term **); // TODO
+
+struct RelDef {
+    struct Goal *g;
+    int num_vars;
+};
 
 struct Stream* applyGoal(struct Goal *g, struct Substitution *s) {
     switch (g->kind) {
@@ -183,8 +198,25 @@ struct Stream* applyGoal(struct Goal *g, struct Substitution *s) {
                 : nonempty(newS, empty());
 
         case RELATE:
-            // TODO
-            return NULL;
+            // Lookup the relation definition
+            struct RelDef reldef = reldefs[g->i];
+
+            // copy the goal
+            struct Goal *copy = copyGoal(varCount, reldef.g);
+
+            // Use unification for binding
+            // chain conj2s to the beginning of the copied goal
+            struct Goal *curr = copy;
+            for (int i = 0; i < g->argc; i++) {
+                curr = conj2(
+                    eq(g->argv[i], var(i)),
+                    curr
+                );
+            }
+
+            varCount += reldef.num_vars;
+
+            return curr;
     }
 }
 
@@ -212,6 +244,13 @@ struct Term {
         };
     };
 };
+
+struct Term *var(int i) {
+    struct Term *result = malloc(sizeof(struct Term));
+    result->kind = VAR;
+    result->i = i;
+    return result;
+}
 
 struct Substitution {
     bool isEmpty;
@@ -291,11 +330,79 @@ struct Substitution *unify(struct Term *u, struct Term *v, struct Substitution *
     return NULL;
 }
 
+bool equalTerms(struct Term *u, struct Term *v) {
+    if (u == v) {
+        return true;
+    }
+
+    if (u->kind != v->kind) {
+        return false;
+    }
+
+    switch (u->kind) {
+        case NIL:
+            return true;
+
+        case VAR:
+            return u->i == v->i;
+
+        case SYM:
+            return strcmp(u->s, v->s) == 0;
+
+        case PAIR:
+            return (
+                equalTerms(u->car, v->car) &&
+                equalTerms(u->cdr, v->cdr)
+            );
+    }
+}
+
+struct Term *copyTerm(int offset, struct Term *t) {
+    return (t->kind == VAR) ? var(t->i + offset) : t;
+}
+
+
+struct Goal *copyGoal(int offset, struct Goal *g) {
+    switch (g->kind) {
+        case CONJ2:
+            return conj2(
+                copyGoal(offset, g->g1)
+                copyGoal(offset, g->g2)
+            );
+
+        case DISJ2:
+            return disj2(
+                copyGoal(offset, g->g1)
+                copyGoal(offset, g->g2)
+            );
+
+        case EQ:
+            return eq(
+                copyTerm(g->u),
+                copyTerm(g->v)
+            );
+
+        case RELATE:
+            struct Term **newArgv = malloc(sizeof(struct Term *) * g->argc);
+
+            for (int i = 0; i < g->argc; i++) {
+                newArgv[i] = copyTerm(g->argv[i]);
+            }
+
+            return relate(
+                g->i,
+                g->argc,
+                newArgv,
+            );
+    }
+}
+
 void runAndReify(int n, struct Goal *g) {
     struct Substitution emptyS = { .isEmpty = true };
 
-    struct Stream *s = applyGoal(g, emptyS);
+    struct Stream *s = applyGoal(g, &emptyS);
 
+    int i = 0;
     while (true) {
         if (i == n + 1) {
             break;
@@ -314,13 +421,12 @@ void runAndReify(int n, struct Goal *g) {
                 break;
 
             case DELAYED:
-                s = applyStream(s);
+                s = pull(s->thunk);
         }
     }
 }
 
-
-struct Stream singletonEmpty = { isEmpty: true };
+struct Stream singletonEmpty = { .kind = EMPTY };
 
 struct Stream* empty() {
     return &singletonEmpty;
@@ -381,9 +487,12 @@ struct Goal *eq(struct Term *u, struct Term *v) {
     return result;
 }
 
-struct Goal *relate() {
-    // TODO
-    return NULL;
+struct Goal *relate(int i, int argc, struct Term **argv) {
+    struct Goal *result = malloc(sizeof(struct Goal));
+    result->i = i;
+    result->argc = argc;
+    result->argv = argv;
+    return result;
 }
 
 // .\9-Misc\1-A-Rule-of-Inference.md
