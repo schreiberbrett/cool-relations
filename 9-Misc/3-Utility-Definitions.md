@@ -25,6 +25,18 @@ The classics
            ((membero x d)))))
 ```
 
+## Reversing using an accumulator
+
+```scheme
+(defrel (reverseo l lR)
+  (reverse-and-appendo l '() lR))
+
+(defrel (reverse-and-appendo l acc lR++acc)
+  (conde ((== l '()) (== lR++acc acc))
+         ((fresh (a d)
+            (== l `(,a . ,d))
+            (reverse-and-appendo d `(,a . ,acc) lR++acc)))))
+```
 
 ## Peano Natural Numbers
 

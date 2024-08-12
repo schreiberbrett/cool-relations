@@ -18,6 +18,7 @@ T = TypeVar('T')
 # .\1-Arithmetic\4-Prime-Factorization.md
 # .\1-Arithmetic\5-GCD.md
 # .\1-Arithmetic\6-Triangle-Numbers.md
+# .\1-Arithmetic\7-Modular-Arithmetic.md
 # .\2-Combinatorics\1-Riffle.md
 # .\2-Combinatorics\2-Cartesian-Product.md
 # .\2-Combinatorics\3-Associative-Cartesian-Product.md

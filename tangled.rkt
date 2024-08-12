@@ -125,6 +125,15 @@
             (<o/peano n-1 m-1)))))
 
 ;; .\1-Arithmetic\2-Divisibility-by-Three.md
+(defrel (interleaved-hasho n)
+  (conde ((== n '()))
+         ((== n '(1)))
+         ((fresh (b1 b2 rest)
+            (== n `(,b1 $ ,b2 . ,rest))
+            (conde ((== b1 0))
+                   ((== b1 1)))
+            (interleaved-hasho `(,b2 . ,rest))))))
+
 ;; .\1-Arithmetic\3-Fresh-Multiples-of-Three.md
 (defrel (fresh-multiple-of-threeo n)
   (fresh (labeled e o prefix)
@@ -298,6 +307,22 @@
   (fresh (n+1)
     (+1o n n+1)
     (*o n n+1 `(0 . ,Tn))))
+
+;; .\1-Arithmetic\7-Modular-Arithmetic.md
+(defrel (congruento a b k)
+  (olego k)
+  (project (k)
+    (fresh (aR bR)
+      (== #t #t))))
+
+(defrel (interleaveo n n$)
+  (conde ((== n '()) (== n$ '()))
+         ((== n '(1)) (== n$ '(1)))
+         ((fresh (a d d$)
+            (== n `(,a . ,d))
+            (pairo d)
+            (== n$ `(,a $ . ,d$))
+            (interleaveo d d$)))))
 
 ;; .\2-Combinatorics\1-Riffle.md
 (defrel (riffleo a b o)
@@ -745,6 +770,15 @@
     (== l `(,a . ,d))
     (conde ((== x a))
            ((membero x d)))))
+
+(defrel (reverseo l lR)
+  (reverse-and-appendo l '() lR))
+
+(defrel (reverse-and-appendo l acc lR++acc)
+  (conde ((== l '()) (== lR++acc acc))
+         ((fresh (a d)
+            (== l `(,a . ,d))
+            (reverse-and-appendo d `(,a . ,acc) lR++acc)))))
 
 (defrel (list-refo l n val)
   (fresh (a d)

@@ -16,6 +16,7 @@
 // .\1-Arithmetic\4-Prime-Factorization.md
 // .\1-Arithmetic\5-GCD.md
 // .\1-Arithmetic\6-Triangle-Numbers.md
+// .\1-Arithmetic\7-Modular-Arithmetic.md
 // .\2-Combinatorics\1-Riffle.md
 // .\2-Combinatorics\2-Cartesian-Product.md
 // .\2-Combinatorics\3-Associative-Cartesian-Product.md
@@ -54,7 +55,7 @@ struct Term *walk(struct Term *, struct Substitution *);
 bool equalTerms(struct Term *, struct Term *);
 struct Term *copyTerm(int, struct Term *);
 struct Goal *copyGoal(int, struct Goal *);
-struct Term *var(int)
+struct Term *var(int);
 
 struct Stream {
     enum {
@@ -366,33 +367,33 @@ struct Goal *copyGoal(int offset, struct Goal *g) {
     switch (g->kind) {
         case CONJ2:
             return conj2(
-                copyGoal(offset, g->g1)
+                copyGoal(offset, g->g1),
                 copyGoal(offset, g->g2)
             );
 
         case DISJ2:
             return disj2(
-                copyGoal(offset, g->g1)
+                copyGoal(offset, g->g1),
                 copyGoal(offset, g->g2)
             );
 
         case EQ:
             return eq(
-                copyTerm(g->u),
-                copyTerm(g->v)
+                copyTerm(offset, g->u),
+                copyTerm(offset, g->v)
             );
 
         case RELATE:
             struct Term **newArgv = malloc(sizeof(struct Term *) * g->argc);
 
             for (int i = 0; i < g->argc; i++) {
-                newArgv[i] = copyTerm(g->argv[i]);
+                newArgv[i] = copyTerm(offset, g->argv[i]);
             }
 
             return relate(
                 g->i,
                 g->argc,
-                newArgv,
+                newArgv
             );
     }
 }
