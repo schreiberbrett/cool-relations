@@ -1,0 +1,404 @@
+#|
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+body {
+  margin:0 auto; max-width: 700px;
+}
+
+img {
+  max-width: 100%;
+}
+</style>
+
+<h1>Cool relations</h1>
+
+<h2 id="list-relations">List relations</h2>
+<p>
+Lists in miniKanren follow the tradition of recursively-defined linked lists
+from functional and logic programming. Often this document will follow a
+convention of using <code>a</code> and <code>d</code> as logic variables to
+describe the head and tail of a non-empty list. This is in the tradition of the
+host language functions <code>car</code> and <code>cdr</code>.
+</p>
+
+<p>
+Here is <code>proper-listo</code> from The Reasoned Schemer, 2nd edition:
+</p>
+
+<pre id="proper-listo">
+|#
+(defrel (proper-listo l)
+  (conde
+    ((== l '()))
+    ((fresh (a d)
+       (== l `(,a . ,d))
+       (proper-listo d)))))
+#|
+</pre>
+
+<p>
+There are certain miniKanren relations which describe types and data
+structures. The relations should not be used directly, because they they can
+ground variables too soon. Instead, use these as a pattern match for each
+clause.
+</p>
+
+<p>
+This technique is related to the following logical rule:
+</p>
+<pre>
+  ((p ∧ a)     ∨ (¬p ∧ b))
+∧ ((p ∧ x)     ∨ (¬p ∧ y))
+-----------------------
+  ( p ∧ a ∧ x) ∨ (¬p ∧ b ∧ y)
+</pre>
+
+<p>
+A relation for detecting if a list is odd or even length is sometimes useful,
+especially if you can ground the length's parity (describing an infinite set of
+lists) before you commit to an a particular length.
+</p>
+
+<pre>
+|#
+(defrel (length-parityo l p)
+  (conde 
+    (== l '()) (== p 'even))
+    ((fresh (a d rec)
+       (== l `(,a . ,d))
+       (conde
+         ((== p 'odd)  (== rec 'even))
+         ((== p 'even) (== rec 'odd)))
+       (length-parityo d rec))))
+#|
+</pre>
+
+<h3 id="appendo">Trusty <code>appendo</code></h3>
+
+<p>
+The classic relation over lists is <code>appendo</code>, which constrains three
+lists, <code>l</code>, <code>r</code>, and <code>l++r</code> such that
+<code>l++r</code> is the concatenation of <code>l</code> and <code>r</code>.
+</p>
+
+<pre>
+|#
+(defrel (appendo l r l++r)
+  (conde
+    ((== l '()) (== l++r r))
+    ((fresh (a d d++r)
+       (== l `(,a . ,d))
+       (== l++r `(,a . ,d++r))
+       (appendo d r d++r)))))
+#|
+</pre>
+
+<p>
+For an introduction to <code>appendo</code>, watch this clip at 34:12 of Will
+Byrd presenting a tutorial at the 2023 miniKanren workshop:
+<a href="https://youtu.be/e_yc9YaLNDE?t=2052">
+https://youtu.be/e_yc9YaLNDE?t=2052</a>.
+There are many things to appreciate about this relation. As Will mentions, it
+is very similar to a recursive definition of the append <i>function</i> over
+cons lists from functional programming, and the relational definition of
+<code>appendo</code> can be derived from regular transformations over the
+functional definition of <code>append</code>.
+</p>
+
+<p>
+Another interesting property of this relation is that when <code>l++r</code> is
+known, then all possible values for <code>l</code> and <code>r</code> can be
+enumerated with <code>run*</code>. Being able to "run backwards" using
+<code>run*</code> can be difficult to achieve.
+</p>
+
+<p>
+Look what happens when all arguments remain fresh:
+</p>
+
+<pre>
+> (run 5 (l r l++r) (appendo l r l++r))
+((() _0 _0)
+  ((_0) _1 (_0 . _1))
+  ((_0 _1) _2 (_0 _1 . _2))
+  ((_0 _1 _2) _3 (_0 _1 _2 . _3))
+  ((_0 _1 _2 _3) _4 (_0 _1 _2 _3 . _4)))
+</pre>
+
+<p>
+What we see here are the first 5 elements of an infinite enumeration of
+triples. Each successive result has <code>l</code> length instantiated to the
+next length, while <code>r</code> remains fresh, and <code>l++r</code> is
+constrained to being a list which has <code>l</code> as a prefix and
+<code>r</code> as a tail, exactly the definition of appending. The fact that
+<code>l</code> is length-instantiated and <code>r</code> remains fresh is a
+consequence of using cons lists. It is not easy to create an append relation
+which length-instantiates <code>r</code> and leaves <code>l</code> fresh due to
+the representation of lists in the host language.
+</p>
+
+<p>
+These two facts: that <code>appendo</code> length-instantiates <code>l</code>,
+and that <code>r</code> remains fresh when <code>l++r</code> is fresh, can be
+determined statically; they can be known just by looking at the code.
+Within the <code>appendo</code> relation, there is actually a definition of
+<code>proper-listo</code>: <code>l</code> is either the empty list, or it is
+the pair <code>`(,a . ,d)</code> with the recursive promise that <code>d</code>
+is itself a proper list. It is easier to see the fact about <code>r</code>. The
+only time <code>r</code> is mentioned in the <code>appendo</code> code is when
+it is unified with <code>l++r</code>.
+</p>
+
+<p>
+This static analysis of miniKanren relations is a promising area of research.
+It would be very useful, say, in an IDE, to automatically know some of the
+consequences of calling a relation on certain arguments.
+</p>
+
+<p>
+One other thing to note is that even though <code>r</code> is free, it really
+represents a proper list, even though a call to something like
+<code>(appendo '(a b c) 'foo '(a b c . foo))</code> will succeed. In miniKanren
+implementations embedded in Scheme, like TRS2e miniKanren and
+faster-miniKanren, the programmer is responsible for maintaining this type
+constraint. But there are implementations that can enforce this constraint at
+compile-time, like
+<a href="https://github.com/SnejUgal/typedKanren">typedKanren</a>.
+</p>
+
+<p>
+One final observation: This <code>appendo</code> definition benefits from the
+ability to write variable names in Scheme which can contain special symbols.
+Here we rely on convention to help show that <code>l++r</code> is the result of
+appending <code>l</code> to <code>r</code>, and similarly that
+<code>d++r</code> is the result of appending <code>d</code> to <code>r</code>.
+It can be annoying to have to name all the intermediate results in logic
+programming, but at least we can take advantage of Scheme's flexible variable
+naming to hint at the relationships between logic variables--it becomes clear
+that there must be a call to <code>(appendo d r d++r)</code> somewhere in the
+relation definition.
+</p>
+
+<h2 id="arithmetic-relations">Arithmetic relations</h2>
+
+<h3 id="peano-numerals">Peano numerals</h3>
+
+<p>
+Peano numerals are represented as a list of repetitions of the symbol
+<code>s</code>. For example, three is <code>'(s s s)</code>, five is
+<code>'(s s s s s)</code>, and zero is the empty list, <code>'()</code>.
+</p>
+
+Like <a href="#proper-listo">proper-listo</a>, there is a relation that fully
+grounds a Peano numeral, which should be used only as a recursion template for
+other relations over Peano numerals.
+
+<pre id="peanoo">
+|#
+(defrel (peanoo n)
+  (conde
+    ((== n '())
+    ((fresh (n-1)
+       (== n `(s . ,n-1))
+       (peanoo n-1))))))
+#|
+</pre>
+
+
+
+<p>
+There is a little-endian binary representation of natural numerals hereafter
+known as Oleg numerals. Below is the analogous "grounding" relation.
+</p>
+
+<pre>
+|#
+(defrel (olego n)
+  (conde
+    ((== n '()))
+    ((fresh (a d)
+       (== n `(,a . ,d))
+       (conde
+         ((== a 0) (poso d))
+         ((== a 1)))
+       (olego d)))))
+#|
+</pre>
+
+See
+<a href="https://okmij.org/ftp/Prolog/Arithm/arithm.pdf">
+Pure, Declarative, and Constructive Arithmetic Relations by Kiselyov, et al.
+</a>
+for further details.
+
+<h2 id="sets-of-naturals">Sets of Oleg numerals</h2>
+<p>
+Here's an idea on how to represent sets of natural numbers in miniKanren.
+</p>
+
+<p>
+I want to start with the simplest thing I can think of: testing a subset of the
+naturals for membership. I'm still thinking about how to implement testing for
+non-membership.
+</p>
+
+<p>
+If you were to ask me which subset of the naturals contains 4, and 0, and 3,
+I'd say {0 ... 3, 4, ... }.
+</p>
+
+<img src="img/relational-natset.svg">
+
+<pre id="elemo">
+|#
+(defrel (elemo n s)
+  (fresh (l m r)
+    (== s `(,l ,m ,r))
+    (conde
+      ((== n '()) (== m #t))
+      ((fresh (a d rec)
+         (== n `(,a . ,d))
+         (conde
+           ((== a 0) (poso d) (== rec l))
+           ((== a 1) (== rec r)))
+         (elemo d rec))))))
+#|
+</pre>
+
+<pre>
+> (run* (q) (elemo '(0 0 1) q)
+            (elemo '() q)
+            (elemo '(1 1) q))
+'((((_.0 _.1 (_.2 #t _.3)) _.4 _.5) #t (_.6 _.7 (_.8 #t _.9))))
+</pre>
+
+<p>
+Raffi Sanna helped me figure out the code for its complement:
+</p>
+
+<pre id="not-elemo">
+(defrel (not-elemo n s)
+  (fresh (l r)
+    (conde
+      ((== s '()))
+      ((== n '()) (== s `(,l #f ,r)))
+      ((fresh (val b rec)
+         (== s `(,val ,l ,r))
+         (conde
+           ((== n `(0 . ,b)) (poso b) (== rec l))
+           ((== n `(1 . ,b)) (== rec r)))
+         (not-elemo b rec))))))
+</pre>
+
+<h2 id="riffleo">Riffling two lists together</h3>
+
+<p>
+Consider the way a dealer shuffles cards like in the below GIF. Two separate
+decks get combined into one larger deck.
+</p>
+
+<img src="https://www.geogebra.org/resource/wbf3as26/nNXngeMdvMRfGZiL/material-wbf3as26.png">
+
+<p>
+In miniKanren, this would be a relationship between a list <code>l1</code>, a
+list <code>l2</code>, and their riffled output <code>l1Ul2</code>. Here, the
+<code>U</code> in <code>l1Ul2</code> is meant to look like multiset union.
+</p>
+
+<p>
+We will write the miniKanren code as if it is checking to make sure the riffled
+output is correct and follows logically from the inputs. First, let's check the
+easy case: if one of <code>l1</code> or <code>l2</code> is empty, then the
+riffled output is just the other list.
+</p>
+
+<pre>
+(defrel (riffleo l1 l2 l1Ul2)
+  (conde
+    ;; If one of l1 or l2 is empty, then the riffled output is is equal to the
+    ;; other list.
+    ((== l1 '()) (== l1Ul2 l2))
+    ((== l2 '()) (== l1Ul2 l1))
+
+    ;; TODO: When both `a` and `b` are non-empty
+    ))
+</pre>
+
+<p>
+These cases are overlapping when both a and b are empty. It is good practice to
+"expand out" the overlapping cases. So there should be three base cases: when
+only <code>l</code> is empty, when only <code>r</code> is empty, and when they
+are both empty.
+</p>
+
+<p>
+As usual, we must positively express non-emptiness by asserting the existence
+of a head and tail for the nonempty list.
+</p>
+
+<pre>
+(defrel (riffleo l1 l2 l1Ul2)
+  (fresh (a1 d1 a2 d2)
+    (conde
+      ;; If l1 and l2 are both empty, then the output is empty.
+      ((== l1 '()) (== l2 '()) (== l1Ul2 '()))
+      
+      ;; If l1 is nonempty and l2 is empty, then the output is l1.
+      ((== l1 `(,a1 . ,d1)) (== l2 '()) (== l1Ul2 l1))
+      
+      ;; If l1 is empty and l2 is nonempty, then the output is l2.
+      ((== l1 '()) (== l2 `(,a2 . ,d2)) (== l1Ul2 l2))
+      
+      ;; TODO: when both l1 and l2 are nonempty
+      )))
+</pre>
+
+<p>
+The recursive case is when both <code>l1</code> and <code>l2</code> are
+nonempty, meaning they both contain a head (<code>a1</code> and
+<code>a2</code>, respectively) and a tail (<code>d1</code> and
+<code>d2</code>). In the above GIF, either a left card falls into the output
+deck, or the right card does. Either way, the riffle shuffle continues. So we
+have two nonempty cases: either <code>a1</code> sits at the top of the deck
+(meaning the rest of the deck is the result of riffling <code>d1</code> with
+the intact <code>l2</code>), or vice versa: <code>a2</code> sits at the top of
+the deck and the rest is <code>l1</code> riffled with <code>d2</code>.
+</p>
+
+<pre>
+|#
+(defrel (riffleo l1 l2 l1Ul2)
+  (fresh (a1 d1 a2 d2 l1Ud2 d1Ul2)
+    (conde
+      ;; If l1 and l2 are both empty, then the output is empty.
+      ((== l1 '()) (== l2 '()) (== l1Ul2 '()))
+      
+      ;; If l1 is nonempty and l2 is empty, then the output is l1.
+      ((== l1 `(,a1 . ,d1)) (== l2 '()) (== l1Ul2 l1))
+      
+      ;; If l1 is empty and l2 is nonempty, then the output is l2.
+      ((== l1 '()) (== l2 `(,a2 . ,d2)) (== l1Ul2 l2))
+      
+      ;; When both l1 and l2 are nonempty
+      ((== l1 `(,a1 . ,d1)) (== l2 `(,a2 . ,d2))
+       (conde
+         ;; Either a1 is the first element in the riffled list
+         ((== l1Ul2 `(,a1 . ,d1Ul2)) (riffleo d1 l2 d1Ul2))
+         
+         ;; Or, a2 is the first element in the riffled list
+         ((== l1Ul2 `(,a2 . ,l1Ud2)) (riffleo l1 d2 l1Ud2)))))))
+#|
+</pre>
+
+
+
+
+
+
+
+
+
+
+
+
+|#

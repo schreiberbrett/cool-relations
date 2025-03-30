@@ -19,17 +19,7 @@ var page_args =
 
 function GetPageArg(key, def) {
   for (var i=0; i<page_args.length; i++)
-    if (page_args[i][0] === key) {
-      try {
-        return decodeURIComponent(page_args[i][1]);
-      } catch (e) {
-        if (e instanceof URIError) {
-          return page_args[i][1];
-        } else {
-          throw e;
-        }
-      }
-    }
+    if (page_args[i][0] == key) return decodeURIComponent(page_args[i][1]);
   return def;
 }
 
@@ -155,10 +145,6 @@ function TocviewToggle(glyph, id) {
   var expand = s.display == "none";
   s.display = expand ? "block" : "none";
   glyph.innerHTML = expand ? "&#9660;" : "&#9658;";
-}
-
-function TocsetToggle() {
-  document.body.classList.toggle("tocsetoverlay");
 }
 
 // Page Init ------------------------------------------------------------------

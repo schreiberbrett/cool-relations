@@ -212,7 +212,7 @@ struct Stream* applyGoal(struct Goal *g, struct Substitution *s) {
 
             varCount += reldef.num_vars;
 
-            return curr;
+            return applyGoal(curr, s);
     }
 }
 ```
