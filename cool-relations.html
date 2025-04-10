@@ -3,6 +3,7 @@
 <style>
 body {
   margin:0 auto; max-width: 700px;
+  padding: 10px;
 }
 
 img {
@@ -63,13 +64,13 @@ lists) before you commit to an a particular length.
 |#
 (defrel (length-parityo l p)
   (conde 
-    (== l '()) (== p 'even))
+    ((== l '()) (== p 'even))
     ((fresh (a d rec)
        (== l `(,a . ,d))
        (conde
          ((== p 'odd)  (== rec 'even))
          ((== p 'even) (== rec 'odd)))
-       (length-parityo d rec))))
+       (length-parityo d rec)))))
 #|
 </pre>
 
@@ -367,7 +368,7 @@ the deck and the rest is <code>l1</code> riffled with <code>d2</code>.
 
 <pre>
 |#
-(defrel (riffleo l1 l2 l1Ul2)
+(defrel (riffleo/v1 l1 l2 l1Ul2)
   (fresh (a1 d1 a2 d2 l1Ud2 d1Ul2)
     (conde
       ;; If l1 and l2 are both empty, then the output is empty.
@@ -383,22 +384,197 @@ the deck and the rest is <code>l1</code> riffled with <code>d2</code>.
       ((== l1 `(,a1 . ,d1)) (== l2 `(,a2 . ,d2))
        (conde
          ;; Either a1 is the first element in the riffled list
-         ((== l1Ul2 `(,a1 . ,d1Ul2)) (riffleo d1 l2 d1Ul2))
+         ((== l1Ul2 `(,a1 . ,d1Ul2)) (riffleo/v1 d1 l2 d1Ul2))
          
          ;; Or, a2 is the first element in the riffled list
-         ((== l1Ul2 `(,a2 . ,l1Ud2)) (riffleo l1 d2 l1Ud2)))))))
+         ((== l1Ul2 `(,a2 . ,l1Ud2)) (riffleo/v1 l1 d2 l1Ud2)))))))
 #|
 </pre>
 
+<p>
+The above has the suffix <code>/v1</code> because, although the code is
+complete, there is room for improvement.
+</p>
 
+<p>
+In <code>riffleo/v1</code>, there are two recursive calls. By introducing fresh
+variables, this recursive call can be factored out (or undistributed) from the
+<code>conde</code>.
+</p>
 
+<pre>
+|#
+(defrel (riffleo/v2 l1 l2 l1Ul2)
+  (fresh (a1 d1 a2 d2 l1Ud2 d1Ul2 x y xUy)
+    (conde
+      ;; If l1 and l2 are both empty, then the output is empty.
+      ((== l1 '()) (== l2 '()) (== l1Ul2 '()))
+      
+      ;; If l1 is nonempty and l2 is empty, then the output is l1.
+      ((== l1 `(,a1 . ,d1)) (== l2 '()) (== l1Ul2 l1))
+      
+      ;; If l1 is empty and l2 is nonempty, then the output is l2.
+      ((== l1 '()) (== l2 `(,a2 . ,d2)) (== l1Ul2 l2))
+      
+      ;; When both l1 and l2 are nonempty
+      ((== l1 `(,a1 . ,d1)) (== l2 `(,a2 . ,d2))
+       (conde
+         ;; Either a1 is the first element in the riffled list
+         ((== l1Ul2 `(,a1 . ,d1Ul2)) (== `(,x ,y ,xUy) `(,d1 ,l2 ,d1Ul2)))
+         
+         ;; Or, a2 is the first element in the riffled list
+         ((== l1Ul2 `(,a2 . ,l1Ud2)) (== `(,x ,y ,xUy) `(,l1 ,d2 ,l1Ud2))))
 
+       ;; Either way, continue riffling
+       (riffleo/v2 x y xUy)))))
+#|
+</pre>
 
+<p>
+Let this be the canonical implementation of riffling.
+</p>
 
+<pre>
+|#
+(defrel (riffleo l1 l2 l1Ul2)
+  (riffleo/v2 l1 l2 l1Ul2))
+#|
+</pre>
 
+<h3>Properties of riffling</h3>
 
+<p>
+Here are some useful observations around "riffling", asserted without proof.
+Since <code>riffleo</code> can be thought of as a generalization of
+<code>appendo</code>, it has many of the same properties.
+</p>
 
+<ol>
+<li>
+Like appending lists, riffling is <i>associative</i>. When three decks of cards
+are riffled together, it does not make a difference which two decks are riffled
+first.
+</li>
+<li>
+Furthermore, riffling two lists together produces an output list whose length
+equals the sum of the lengths of its input lists. In the same spirit, if some
+element <code>a</code> comes before another element <code>b</code> in one of
+the lists being riffled, then <code>a</code> must also come before
+<code>b</code> in the output list. Riffling, in some sense, preserves the
+internal order of both its input lists.
+</li>
+<li>
+Unlike appending, riffling is <i>commutative</i>. That is,
+<code>(riffleo a b c)</code> produces the same solution set as
+<code>(riffleo b a c)</code>. When you riffle shuffle two decks together, does
+it really matter which deck is in your left hand and which is in your right?
+</li>
+</ol>
 
+<h3>Using <code>riffleo</code> to solve the 3-partition problem</h3>
 
+<p>
+Consider the NP-complete
+<a href="https://en.wikipedia.org/wiki/3-partition_problem">
+3-partition problem</a>, where the input is a list <code>l</code> of 3n numbers
+and the output is a list <code>partitions</code> of n triples, such that each
+partition adds up to the same <code>sum</code> and each element in each triple
+is contained exactly once in <code>l</code>. In miniKanren, this problem can be
+described as a relationship between input and output as follows:
+</p>
+
+<p>
+When the input list <code>l</code> is empty, there are no partitions.
+By vacuous truth, all the partitions add up to the same sum.
+</p>
+
+<p>
+When <code>l</code> is nonempty, then it must have at least three elements that
+add up to the <code>sum</code>, and the rest of the elements of <code>l</code>
+must also form a 3-partition with the same <code>sum</code>. Crucially, the
+three elements that add up to the <code>sum</code> (call them <code>e1</code>,
+<code>e2</code>, and <code>e3</code>) can be picked, or "unriffled", from
+<code>l</code>.
+</p>
+
+<pre>
+|#
+
+(defrel (3-partitiono l partitions sum)
+  (conde
+    ((== l '()) (== partitions '()))
+    ((fresh (e1 e2 e3 e1+e2 rest-l rest-partitions)
+       (== partitions `((,e1 ,e2 ,e3) . ,rest-partitions))
+       (riffleo `(,e1 ,e2 ,e3) rest-l l)
+       (pluso e1 e2 e1+e2)
+       (pluso e1+e2 e3 sum)
+       (3-partitiono rest-l rest-partitions sum)))))
+
+#|
+</pre>
+
+<p>
+Notice how this upholds the invariant that <code>l</code> is of some length 3n,
+since three elements are picked from <code>l</code> recursively until it is
+empty.
+</p>
+
+<p>
+Let's see how this relation fares against
+<a href="https://en.wikipedia.org/wiki/3-partition_problem#Example">
+this first example from Wikipedia</a>. Of course, <code>pluso</code> only works
+on Oleg numerals, so in order to convert the decimal inputs from the example,
+<code>build-num</code> is used.
+</p>
+
+<pre>
+> (run 1 (partitions sum)
+    (3-partitiono
+      (map build-num '(20 23 25 30 49 45 27 30 30 40 22 19))
+      partitions
+      sum))
+> (run 1 (partitions sum)
+      (3-partitiono
+        (map build-num '(20 23 25 30 49 45 27 30 30 40 22 19))
+        partitions
+        sum))
+((( ((0 0 1 0 1)   (1 0 0 1 1) (1 0 1 1 0 1))
+    ((1 1 1 0 1)   (1 1 0 1 1) (0 0 0 1 0 1))
+    ((0 1 1 1 1)   (0 1 1 1 1) (0 1 1 1 1)  )
+    ((1 0 0 0 1 1) (0 1 1 0 1) (1 1 0 0 1)  ))
+    
+    (0 1 0 1 1 0 1)))
+</pre>
+
+<p>
+Interpreting these results in decimal shows that the original list can be
+partitioned into the triples <code>(20 25 45)</code>, <code>(23 27 40)</code>,
+<code>(30 30 30)</code>, and <code>(49 22 19)</code>, each summing to 90.
+</p>
+
+<h2 id="cartesian-product">The Cartesian product</h2>
+
+<p>
+The Cartesian product, typically defined over sets, can be written in
+miniKanren over lists, similar to Python's
+<a href="https://docs.python.org/3/library/itertools.html#itertools.product">
+itertools.product</a>. Thus we can define a relation between three lists:
+two "input" lists <code>l1</code> and <code>l2</code>, and a third list
+<code>l1*l2</code> denoting their Cartesian product.
+</p>
+
+<p>
+We recur over the first list <code>l1</code>. The base case is straightforward:
+When <code>l1</code> is empty, then the product is empty. It is like
+multiplying by zero.
+</p>
+
+<p>
+The recursive case is more interesting. I always like to start by drawing a
+picture and annotating things that should be named in green. This helps me
+figure out the relationships.
+</p>
+
+<img src="img/cartesian-product.png">
 
 |#
