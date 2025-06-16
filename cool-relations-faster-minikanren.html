@@ -1,0 +1,125 @@
+#|
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+body {
+  margin:0 auto; max-width: 700px;
+  padding: 10px;
+  font-family: system-ui;
+}
+
+img {
+  max-width: 100%;
+}
+</style>
+
+<h1>
+Advanced relations computable by
+<a href="https://github.com/michaelballantyne/faster-minikanren">
+faster-minikanren
+</a>
+</h1>
+
+<h2>1-in-3SAT</h2>
+<p>
+The 1-in-3SAT problem asks if it is possible to satisfy exactly one of the 3
+literals in a 3-DNF.
+</p>
+
+<p>
+It is related to <a href="cool-relations.html#3sat">3SAT</a>.
+</p>
+
+<p>
+We of course need some sort of lookup from the variables to their true/false
+assignment. The classic miniKanren <code>lookupo</code> will do.
+</p>
+
+<pre>
+|#
+(defrel (lookupo a key val)
+  (fresh (k^ v^ rest)
+    (== a `((,k^ . ,v^) . ,rest))
+    (conde
+      ((==  key k^) (== val v^))
+      ((=/= key k^) (lookupo rest key val)))))
+#|
+</pre>
+
+<pre>
+> (run 5 (a b c) (lookupo a b c))
+((((_.0 . _.1) . _.2) _.0 _.1)
+((((_.0 . _.1)
+   (_.2 . _.3) . _.4) _.2 _.3)
+     (=/= ((_.0 _.2))))
+((((_.0 . _.1)
+   (_.2 . _.3)
+   (_.4 . _.5) . _.6) _.4 _.5)
+     (=/= ((_.0 _.4)) ((_.2 _.4))))
+((((_.0 . _.1)
+   (_.2 . _.3)
+   (_.4 . _.5)
+   (_.6 . _.7) . _.8) _.6 _.7)
+     (=/= ((_.0 _.6)) ((_.2 _.6)) ((_.4 _.6))))
+((((_.0 . _.1)
+   (_.2 . _.3)
+   (_.4 . _.5)
+   (_.6 . _.7)
+   (_.8 . _.9) . _.10) _.8 _.9)
+     (=/= ((_.0 _.8)) ((_.2 _.8)) ((_.4 _.8)) ((_.6 _.8)))))
+</pre>
+
+<pre>
+|#
+(defrel (1-in-3sato/1 dnf assignments)
+  (fresh (l v l1 v1 l2 v2 l3 v3 rest)
+    (conde
+      ((== dnf '()))
+      ((== dnf `((,l1 ,v1 ,l2 ,v2 ,l3 ,v3) . ,rest))
+       (conde
+         ((== v v1) (==  l l1) (=/= l l2) (=/= l l3))
+         ((== v v2) (=/= l l1) (==  l l2) (=/= l l3))
+         ((== v v3) (=/= l l1) (=/= l l2) (==  l l3)))
+       (lookupo assignments v l)
+       (1-in-3sato/1 rest assignments)))))
+
+(defrel (1-in-3sato/2 dnf assignments)
+  (fresh (l v l1 v1 l2 v2 l3 v3 rest)
+    (conde
+      ((== dnf '()))
+      ((== dnf `((,l1 ,v1 ,l2 ,v2 ,l3 ,v3) . ,rest))
+       (lookupo assignments v l)
+       (conde
+         ((== v v1) (==  l l1) (=/= l l2) (=/= l l3))
+         ((== v v2) (=/= l l1) (==  l l2) (=/= l l3))
+         ((== v v3) (=/= l l1) (=/= l l2) (==  l l3)))
+       (1-in-3sato/2 rest assignments)))))
+#|
+</pre>
+
+<pre>
+> (run 5 (a b) (1-in-3sato/1 a b))
+((() _.0)
+  ((((_.0 _.1 _.2 _.3 _.4 _.5)) ((_.1 . _.0) . _.6))
+    (=/= ((_.0 _.2)) ((_.0 _.4))))
+  ((((_.0 _.1 _.2 _.3 _.4 _.5)) ((_.3 . _.2) . _.6))
+    (=/= ((_.0 _.2)) ((_.2 _.4))))
+  ((((_.0 _.1 _.2 _.3 _.4 _.5) (_.0 _.1 _.6 _.7 _.8 _.9))
+     ((_.1 . _.0) . _.10))
+    (=/= ((_.0 _.2)) ((_.0 _.4)) ((_.0 _.6)) ((_.0 _.8))))
+  ((((_.0 _.1 _.2 _.3 _.4 _.5))
+     ((_.6 . _.7) (_.1 . _.0) . _.8))
+    (=/= ((_.0 _.2)) ((_.0 _.4)) ((_.1 _.6)))))
+> (run 5 (a b) (1-in-3sato/2 a b))
+((() _.0)
+  ((((_.0 _.1 _.2 _.3 _.4 _.5)) ((_.1 . _.0) . _.6))
+    (=/= ((_.0 _.2)) ((_.0 _.4))))
+  ((((_.0 _.1 _.2 _.3 _.4 _.5)) ((_.3 . _.2) . _.6))
+    (=/= ((_.0 _.2)) ((_.2 _.4))))
+  ((((_.0 _.1 _.2 _.3 _.4 _.5) (_.0 _.1 _.6 _.7 _.8 _.9))
+     ((_.1 . _.0) . _.10))
+    (=/= ((_.0 _.2)) ((_.0 _.4)) ((_.0 _.6)) ((_.0 _.8))))
+  ((((_.0 _.1 _.2 _.3 _.4 _.5)) ((_.5 . _.4) . _.6))
+    (=/= ((_.0 _.4)) ((_.2 _.4)))))
+
+</pre>
+|#

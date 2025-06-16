@@ -4,6 +4,7 @@
 body {
   margin:0 auto; max-width: 700px;
   padding: 10px;
+  font-family: system-ui;
 }
 
 img {
@@ -198,10 +199,10 @@ other relations over Peano numerals.
 |#
 (defrel (peanoo n)
   (conde
-    ((== n '())
+    ((== n '()))
     ((fresh (n-1)
        (== n `(s . ,n-1))
-       (peanoo n-1))))))
+       (peanoo n-1)))))
 #|
 </pre>
 
@@ -289,6 +290,71 @@ Raffi Sanna helped me figure out the code for its complement:
            ((== n `(0 . ,b)) (poso b) (== rec l))
            ((== n `(1 . ,b)) (== rec r)))
          (not-elemo b rec))))))
+</pre>
+
+<h3 id="divisibility-by-three">Divisibility by three</h3>
+
+
+<pre>
+|#
+(defrel (even-odd-helpero n diff)
+  (conde
+    [(== n '()) (== diff 0)]
+    [(== n '(1)) (== diff 2)]
+    [(== n '(0 1)) (== diff 1)]
+    [(== n '(1 1)) (== diff 0)]
+    [(fresh (a ad dd new-diff)
+       (== n `(,a ,ad . ,dd))
+       (poso dd)
+       (conde
+         [(== a ad) (== diff new-diff)]
+         [(== `(,a ,ad) '(0 1)) (+1mod3o new-diff diff)]
+         [(== `(,a ,ad) '(1 0)) (+1mod3o diff new-diff)])
+       (even-odd-helpero dd new-diff))]))
+
+(defrel (div3o/even-odd n)
+  (even-odd-helpero n 0))
+
+(defrel (+1mod3o n n+1)
+  (conde
+    [(== n 0) (== n+1 1)]
+    [(== n 1) (== n+1 2)]
+    [(== n 2) (== n+1 0)]))
+#|
+</pre>
+
+<pre>
+> (run 30 (q) (div3o/even-odd q))
+  ((())
+   ((1 1))
+   ((_0 _0 1 1))
+   ((_0 _0 _1 _1 1 1))
+   ((0 1 1))
+   ((1 0 0 1))
+   ((_0 _0 _1 _1 _2 _2 1 1))
+   ((0 1 _0 _0 1))
+   ((_0 _0 0 1 1))
+   ((1 0 _0 _0 0 1))
+   ((_0 _0 1 0 0 1))
+   ((_0 _0 _1 _1 _2 _2 _3 _3 1 1))
+   ((0 1 _0 _0 _1 _1 1))
+   ((_0 _0 0 1 _1 _1 1))
+   ((1 0 _0 _0 _1 _1 0 1))
+   ((_0 _0 _1 _1 0 1 1))
+   ((0 1 0 1 0 1))
+   ((_0 _0 1 0 _1 _1 0 1))
+   ((1 0 0 1 1 1))
+   ((_0 _0 _1 _1 1 0 0 1))
+   ((0 1 1 0 1 1))
+   ((1 0 1 0 1))
+   ((_0 _0 _1 _1 _2 _2 _3 _3 _4 _4 1 1))
+   ((0 1 _0 _0 _1 _1 _2 _2 1))
+   ((_0 _0 0 1 _1 _1 _2 _2 1))
+   ((1 0 _0 _0 _1 _1 _2 _2 0 1))
+   ((_0 _0 _1 _1 0 1 _2 _2 1))
+   ((0 1 0 1 _0 _0 0 1))
+   ((_0 _0 1 0 _1 _1 _2 _2 0 1))
+   ((1 0 0 1 _0 _0 1 1)))
 </pre>
 
 <h2 id="riffleo">Riffling two lists together</h3>
@@ -551,6 +617,143 @@ Interpreting these results in decimal shows that the original list can be
 partitioned into the triples <code>(20 25 45)</code>, <code>(23 27 40)</code>,
 <code>(30 30 30)</code>, and <code>(49 22 19)</code>, each summing to 90.
 </p>
+
+<h2 id="3sat">3SAT</h2>
+<p>
+Another NP-complete problem is 3SAT: given a list of triples, where each
+element in the triple represents a <i>literal</i>, that is, a number
+representing the <b>i</b>th variable along with a boolean representing the
+positive or negative version of the literal, does there exist a mapping of
+each variable index to a boolean such that every triple contains at least one
+correct assignment?
+</p>
+
+<p>
+In order to encode 3SAT in miniKanren, we need a way to look up a variable's
+value. A trie can help here, similar to a <a href="#sets-of-naturals">set of
+Oleg numerals</a>.
+</p>
+
+<pre>
+|#
+(defrel (lookupo/trie map n val)
+  (fresh (v l r)
+    (== map `(,v ,l ,r))
+    (conde
+      ((== n '()) (== val v))
+      ((fresh (a d rest-map)
+         (== n `(,a . ,d))
+         (conde
+           ((== a 0) (poso d) (== rest-map l))
+           ((== a 1) (== rest-map r)))
+         (lookupo/trie rest-map d val))))))
+#|
+</pre>
+
+<p>
+A negative form of <code>lookupo/trie</code> is not needed for 3SAT, because
+the mapping can remain open-ended for Oleg numerals that do not appear in the
+formula.
+</p>
+
+<pre>
+|#
+(defrel (3sato dnf assignments)
+  (conde
+    ((== dnf '()))
+    ((fresh (v1 v2 v3 p1 p2 p3 v p rest-dnf)
+       (== dnf `((,p1 ,v1 ,p2 ,v2 ,p3 ,v3) . ,rest-dnf))
+       (conde
+         ((== p1 p) (== v1 v))
+         ((== p2 p) (== v2 v))
+         ((== p3 p) (== v3 v)))
+       (lookupo/trie assignments v p)
+       (3sato rest-dnf assignments)))))
+#|
+</pre>
+
+<p>
+Let's see if it can detect that the following formula is unsatisfiable.
+</p>
+
+<pre>
+> (run 1 (q)
+    (3sato '((#t () #t (1) #t (0 1))
+             (#t () #t (1) #f (0 1))
+             (#t () #f (1) #t (0 1))
+             (#t () #f (1) #f (0 1))
+             (#f () #t (1) #t (0 1))
+             (#f () #t (1) #f (0 1))
+             (#f () #f (1) #t (0 1))
+             (#f () #f (1) #f (0 1))) q))
+
+()
+</pre>
+
+<p>
+It can! How about removing the last line? It should then be satisfiable, when
+all three variables are assigned to <code>#t</code>.
+</p>
+
+<pre>
+> (run 1 (q)
+    (3sato '((#t () #t (1) #t (0 1))
+             (#t () #t (1) #f (0 1))
+             (#t () #f (1) #t (0 1))
+             (#t () #f (1) #f (0 1))
+             (#f () #t (1) #t (0 1))
+             (#f () #t (1) #f (0 1))
+             (#f () #f (1) #t (0 1))) q))
+
+(((#t (_0 _1 (#t _2 _3)) (#t _4 _5))))
+</pre>
+
+<p>
+That works too! In fact that should be the only answer.
+</p>
+
+<pre>
+> (run* (q)
+    (3sato '((#t () #t (1) #t (0 1))
+             (#t () #t (1) #f (0 1))
+             (#t () #f (1) #t (0 1))
+             (#t () #f (1) #f (0 1))
+             (#f () #t (1) #t (0 1))
+             (#f () #t (1) #f (0 1))
+             (#f () #f (1) #t (0 1))) q))
+
+(((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5)))
+ ((#t (_0 _1 (#t _2 _3)) (#t _4 _5))))
+</pre>
+
+<p>
+Each identical answer here corresponds to an "execution path" the verifier
+took--whether to satisfy using the first, second, or third literal for each
+clause.
+</p>
+
 
 <h2 id="cartesian-product">The Cartesian product</h2>
 
