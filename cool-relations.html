@@ -13,6 +13,23 @@ img {
 </style>
 
 <h1>Cool relations</h1>
+<p>
+See also:
+
+<ul>
+  <li>
+    <a href="cool-relations-faster-minikanren.html">
+      cool-relations-faster-minikanren.html
+    </a>
+  </li>
+
+  <li>
+    <a href="cool-relations-clpset.html">
+      cool-relations-clpset.html
+    </a>
+  </li>
+</ul>
+</p>
 
 <h2 id="list-relations">List relations</h2>
 <p>
@@ -40,9 +57,8 @@ Here is <code>proper-listo</code> from The Reasoned Schemer, 2nd edition:
 
 <p>
 There are certain miniKanren relations which describe types and data
-structures. The relations should not be used directly, because they they can
-ground variables too soon. Instead, use these as a pattern match for each
-clause.
+structures. The relations should not be used directly, because they can ground
+variables too soon. Instead, use these as a pattern match for each clause.
 </p>
 
 <p>
@@ -291,6 +307,86 @@ Raffi Sanna helped me figure out the code for its complement:
            ((== n `(1 . ,b)) (== rec r)))
          (not-elemo b rec))))))
 </pre>
+
+<p>
+It is also possible to write <code>conjo</code>, which a relation analogous to
+<code>conso</code>, but over sets. Since sets lack order and duplicates, this
+implementation must be careful to assert that the element picked could be any
+Oleg numeral <code>n</code> that a set <code>s+n</code> has whose removal
+admits the set <code>s</code>.
+</p>
+
+<pre>
+|#
+(defrel (conjo n s s+n)
+  (fresh (n//2 z l r l+n//2 r+n//2)
+    (conde
+      ((== n '()) (== s #f) (== s+n '(#t #f #f)))
+      ((== n '()) (== s `(#f ,l ,r)) (== s+n `(#t ,l ,r)))
+      ((fresh (t t+n//2)
+         (conde
+           ((== n `(0 . ,n//2)) (poso n//2)
+            (== s #f) (== t #f) (== s+n `(#f ,t+n//2 #f)))
+           ((== n `(1 . ,n//2))
+            (== s #f) (== t #f) (== s+n `(#f #f ,t+n//2)))
+           ((== n `(0 . ,n//2)) (poso n//2)
+            (== s `(,z ,l ,r)) (== t l)
+            (== s+n `(,z ,t+n//2 ,r)))
+           ((== n `(1 . ,n//2))
+            (== s `(,z ,l ,r)) (== t r)
+            (== s+n `(,z ,l ,t+n//2))))
+         (conjo n//2 t t+n//2))))))
+#|
+</pre>
+
+<p>
+It is possible to construct a set of pairs of natural numbers by using a pairing
+relation, discussed in the next section.
+</p>
+
+<h3 id="pairing-relations">Pairing relations</h3>
+
+<p>
+<a href="https://en.wikipedia.org/wiki/Pairing_function#Other_pairing_functions">
+Pigeon's pairing relation
+</a> looks promising, but unlike our Oleg numbers, which end on their last 1,
+the algorithm in the above link treats its binary numbers as if they have an
+infinite tail of zeros. Because of this mismatch, the cases need to be
+considered carefully. I have chosen to break it up into three cases (zero, one,
+and greater-than-one) in order to ensure all Oleg numbers involved end in a 1.
+</p>
+
+<pre>
+|#
+(defrel (pairingo i j p)
+  (conde
+    ((== i '()) (== j '()) (== p '()))
+    ((== i '(1)) (== j '()) (== p '(1)))
+    ((== i '()) (== j '(1)) (== p '(0 1)))
+    ((== i '(1)) (== j '(1)) (== p '(1 1)))
+    ((fresh (i0 j0 i1 j1 irest jrest i//2 j//2 rec)
+       (== p `(,i0 ,j0 . ,rec))
+       (conde
+         ((== i '()) (== i0 0) (== i//2 '())
+          (== j `(,j0 ,j1 . ,jrest)) (== j//2 `(,j1 . ,jrest)))
+         ((== i '(1)) (== i0 1) (== i//2 '())
+          (== j `(,j0 ,j1 . ,jrest)) (== j//2 `(,j1 . ,jrest)))
+         ((== i `(,i0 ,i1 . ,irest)) (== i//2 `(,i1 . ,irest))
+          (== j '()) (== j0 0) (== j//2 '()))
+         ((== i `(,i0 ,i1 . ,irest)) (== i//2 `(,i1 . ,irest))
+          (== j '(1)) (== j0 1) (== j//2 '()))
+         ((== i `(,i0 ,i1 . ,irest)) (== i//2 `(,i1 . ,irest))
+          (== j `(,j0 ,j1 . ,jrest)) (== j//2 `(,j1 . ,jrest))))
+       (pairingo i//2 j//2 rec)))))
+#|
+</pre>
+
+<p>
+With this relation it is now possible to represent a set of pairs as sets of
+their pairigs. This also allows an efficient representation of graphs as a set
+of directed edges.
+</p>
+
 
 <h3 id="divisibility-by-three">Divisibility by three</h3>
 
@@ -754,6 +850,58 @@ took--whether to satisfy using the first, second, or third literal for each
 clause.
 </p>
 
+<h2 id="hamiltonian-graphs">Hamiltonian graphs</h2>
+
+<p>
+When a directed graph has a path within it that visits every vertex, then that
+graph is called Hamiltonian. Such Hamiltonian graphs can be enumerated because
+we have the necessary data structures.
+</p>
+
+<p>
+A recursive helper is needed to track which vertices of the graph that still
+need to be visited. It is also parameterized on what vertex to start from.
+</p>
+
+<pre>
+|#
+(defrel (hamiltoniano/rec from unvisited edges path)
+  (conde
+    ((== unvisited #f) (== path '()))
+    ((fresh (edge rest-edges rest-path rest-unvisited next)
+       (== path `(,edge . ,rest-path))
+       (pairingo from next edge)
+       (conjo edge rest-edges edges)
+       (conjo next rest-unvisited unvisited)
+       (hamiltoniano/rec next rest-unvisited rest-edges rest-path)))))
+#|
+</pre>
+
+<p>
+This recursive helper is great and all, but now any caller would need to
+provide the vertex to start from as well as the set of unvisited vertices.
+I think starting from N and generating the set of unvisited vertices to always
+be {0 ... N-1} would be fine. I don't want to deal with a directed graph on N
+vertices whose labels are anything other than [0, N).
+</p>
+
+<p>
+But I don't know how to generate the set {0 ... N-1}. It would need to operate
+similar to Python's <code>range</code> function. That doesn't stop me from
+manually providing that set and starting vertex, like in the following query
+for 5 Hamiltonian graphs each with 4 vertices.
+</p>
+
+<pre>
+> (run 5 (edges path)
+    (hamiltoniano/rec
+      ; Start from vertex 3:
+      '(1 1)
+      ; Need to visit vertices {0, 1, 2}
+      '(#t (#f #f (#t #f #f)) (#t #f #f))
+      edges
+      path))
+</pre>
 
 <h2 id="cartesian-product">The Cartesian product</h2>
 
