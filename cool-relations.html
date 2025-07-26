@@ -1,6 +1,7 @@
 #|
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
+
 body {
   margin:0 auto; max-width: 700px;
   padding: 10px;
@@ -13,23 +14,74 @@ img {
 </style>
 
 <h1>Cool relations</h1>
+
+<pre>
+|#
+
+(load "../faster-clpset-minikanren/mk-vicare.scm")
+(load "../faster-clpset-minikanren/sets.scm")
+(load "../faster-clpset-minikanren/mk.scm")
+(load "../faster-clpset-minikanren/numbers.scm")
+
+#|
+</pre>
+
+<h2 id="introduction">Introduction</h2>
 <p>
-See also:
-
-<ul>
-  <li>
-    <a href="cool-relations-faster-minikanren.html">
-      cool-relations-faster-minikanren.html
-    </a>
-  </li>
-
-  <li>
-    <a href="cool-relations-clpset.html">
-      cool-relations-clpset.html
-    </a>
-  </li>
-</ul>
+Consider the following table of astrological signs and their English meanings:
 </p>
+
+<table>
+<tr><th>Astrological Sign</th><th>Meaning</th></tr>
+<tr><td>Aries</td><td>The Ram</td></tr>
+<tr><td>Taurus</td><td>The Bull</td></tr>
+<tr><td>Gemini</td><td>The Twins</td></tr>
+<tr><td>Cancer</td><td>The Crab</td></tr>
+<tr><td>Leo</td><td>The Lion</td></tr>
+<tr><td>Virgo</td><td>The Maiden</td></tr>
+<tr><td>Libra</td><td>The Scales</td></tr>
+<tr><td>Scorpio</td><td>The Scorpion</td></tr>
+<tr><td>Sagittarius</td><td>The Archer</td></tr>
+<tr><td>Capricorn</td><td>The Goat</td></tr>
+<tr><td>Aquarius</td><td>The Water-bearer</td></tr>
+<tr><td>Pisces</td><td>The Fish</td></tr>
+</table>
+
+<p>
+There are many things to appreciate about this table. I can consult it to see
+the full list of astrological signs. If I forget the meaning of "Gemini", I can
+find its row and look at its associated meaning, "The Twins". If I remember
+that one of the signs corresponds to "The Archer", I can likewise search in the
+reverse direction to confirm that I was thinking of "Sagittarius".
+</p>
+
+<p>
+This table is easily encodable in a relational programming language. The
+relational language used throughout this document is miniKanren, specifically
+the "TRS2E" dialect found in The Reasoned Schemer, 2nd Edition. In miniKanren,
+here's what the astrological sign and meaning relation looks like:
+</p>
+
+<pre>
+|#
+
+(defrel (zodiaco sign meaning)
+  (conde
+    ((== sign 'aries)       (== meaning 'the-ram))
+    ((== sign 'taurus)      (== meaning 'the-bull))
+    ((== sign 'gemini)      (== meaning 'the-twins))
+    ((== sign 'cancer)      (== meaning 'the-crab))
+    ((== sign 'leo)         (== meaning 'the-lion))
+    ((== sign 'virgo)       (== meaning 'the-virgin))
+    ((== sign 'libra)       (== meaning 'the-scales))
+    ((== sign 'scorpio)     (== meaning 'the-scorpion))
+    ((== sign 'sagittarius) (== meaning 'the-archer))
+    ((== sign 'capricorn)   (== meaning 'the-goat))
+    ((== sign 'aquarius)    (== meaning 'the-water-bearer))
+    ((== sign 'pisces)      (== meaning 'the-fish))))
+
+#|
+</pre>
 
 <h2 id="list-relations">List relations</h2>
 <p>
@@ -46,12 +98,14 @@ Here is <code>proper-listo</code> from The Reasoned Schemer, 2nd edition:
 
 <pre id="proper-listo">
 |#
+
 (defrel (proper-listo l)
   (conde
     ((== l '()))
     ((fresh (a d)
        (== l `(,a . ,d))
        (proper-listo d)))))
+
 #|
 </pre>
 
@@ -65,10 +119,10 @@ variables too soon. Instead, use these as a pattern match for each clause.
 This technique is related to the following logical rule:
 </p>
 <pre>
-  ((p ∧ a)     ∨ (¬p ∧ b))
-∧ ((p ∧ x)     ∨ (¬p ∧ y))
------------------------
-  ( p ∧ a ∧ x) ∨ (¬p ∧ b ∧ y)
+  ((p ^ a)     v (¬p ^ b))
+^ ((p ^ x)     v (¬p ^ y))
+-----------------------------
+  ( p ^ a ^ x) v (¬p ^ b ^ y)
 </pre>
 
 <p>
@@ -99,8 +153,13 @@ lists, <code>l</code>, <code>r</code>, and <code>l++r</code> such that
 <code>l++r</code> is the concatenation of <code>l</code> and <code>r</code>.
 </p>
 
+<p>
+Note that <code>appendo</code> is already defined in
+<code>faster-clpset-minikanren/numbers.scm</code>.
+</p>
+
 <pre>
-|#
+
 (defrel (appendo l r l++r)
   (conde
     ((== l '()) (== l++r r))
@@ -108,7 +167,7 @@ lists, <code>l</code>, <code>r</code>, and <code>l++r</code> such that
        (== l `(,a . ,d))
        (== l++r `(,a . ,d++r))
        (appendo d r d++r)))))
-#|
+
 </pre>
 
 <p>
@@ -850,6 +909,192 @@ took--whether to satisfy using the first, second, or third literal for each
 clause.
 </p>
 
+<h2 id="1-in-3sat">1-in-3SAT</h2>
+<p>
+The 1-in-3SAT problem asks if it is possible to satisfy exactly one of the 3
+literals in a 3-DNF.
+</p>
+
+<p>
+It is related to <a href="cool-relations.html#3sat">3SAT</a>.
+</p>
+
+<p>
+We of course need some sort of lookup from the variables to their true/false
+assignment. The classic miniKanren <code>lookupo</code> will do.
+</p>
+
+<pre>
+|#
+(defrel (lookupo a key val)
+  (fresh (k^ v^ rest)
+    (== a `((,k^ . ,v^) . ,rest))
+    (conde
+      ((==  key k^) (== val v^))
+      ((=/= key k^) (lookupo rest key val)))))
+#|
+</pre>
+
+<pre>
+> (run 5 (a b c) (lookupo a b c))
+((((_.0 . _.1) . _.2) _.0 _.1)
+((((_.0 . _.1)
+   (_.2 . _.3) . _.4) _.2 _.3)
+     (=/= ((_.0 _.2))))
+((((_.0 . _.1)
+   (_.2 . _.3)
+   (_.4 . _.5) . _.6) _.4 _.5)
+     (=/= ((_.0 _.4)) ((_.2 _.4))))
+((((_.0 . _.1)
+   (_.2 . _.3)
+   (_.4 . _.5)
+   (_.6 . _.7) . _.8) _.6 _.7)
+     (=/= ((_.0 _.6)) ((_.2 _.6)) ((_.4 _.6))))
+((((_.0 . _.1)
+   (_.2 . _.3)
+   (_.4 . _.5)
+   (_.6 . _.7)
+   (_.8 . _.9) . _.10) _.8 _.9)
+     (=/= ((_.0 _.8)) ((_.2 _.8)) ((_.4 _.8)) ((_.6 _.8)))))
+</pre>
+
+<pre>
+|#
+(defrel (1-in-3sato/1 dnf assignments)
+  (fresh (l v l1 v1 l2 v2 l3 v3 rest)
+    (conde
+      ((== dnf '()))
+      ((== dnf `((,l1 ,v1 ,l2 ,v2 ,l3 ,v3) . ,rest))
+       (conde
+         ((== v v1) (==  l l1) (=/= l l2) (=/= l l3))
+         ((== v v2) (=/= l l1) (==  l l2) (=/= l l3))
+         ((== v v3) (=/= l l1) (=/= l l2) (==  l l3)))
+       (lookupo assignments v l)
+       (1-in-3sato/1 rest assignments)))))
+
+(defrel (1-in-3sato/2 dnf assignments)
+  (fresh (l v l1 v1 l2 v2 l3 v3 rest)
+    (conde
+      ((== dnf '()))
+      ((== dnf `((,l1 ,v1 ,l2 ,v2 ,l3 ,v3) . ,rest))
+       (lookupo assignments v l)
+       (conde
+         ((== v v1) (==  l l1) (=/= l l2) (=/= l l3))
+         ((== v v2) (=/= l l1) (==  l l2) (=/= l l3))
+         ((== v v3) (=/= l l1) (=/= l l2) (==  l l3)))
+       (1-in-3sato/2 rest assignments)))))
+#|
+</pre>
+
+<pre>
+> (run 5 (a b) (1-in-3sato/1 a b))
+((() _.0)
+  ((((_.0 _.1 _.2 _.3 _.4 _.5)) ((_.1 . _.0) . _.6))
+    (=/= ((_.0 _.2)) ((_.0 _.4))))
+  ((((_.0 _.1 _.2 _.3 _.4 _.5)) ((_.3 . _.2) . _.6))
+    (=/= ((_.0 _.2)) ((_.2 _.4))))
+  ((((_.0 _.1 _.2 _.3 _.4 _.5) (_.0 _.1 _.6 _.7 _.8 _.9))
+     ((_.1 . _.0) . _.10))
+    (=/= ((_.0 _.2)) ((_.0 _.4)) ((_.0 _.6)) ((_.0 _.8))))
+  ((((_.0 _.1 _.2 _.3 _.4 _.5))
+     ((_.6 . _.7) (_.1 . _.0) . _.8))
+    (=/= ((_.0 _.2)) ((_.0 _.4)) ((_.1 _.6)))))
+> (run 5 (a b) (1-in-3sato/2 a b))
+((() _.0)
+  ((((_.0 _.1 _.2 _.3 _.4 _.5)) ((_.1 . _.0) . _.6))
+    (=/= ((_.0 _.2)) ((_.0 _.4))))
+  ((((_.0 _.1 _.2 _.3 _.4 _.5)) ((_.3 . _.2) . _.6))
+    (=/= ((_.0 _.2)) ((_.2 _.4))))
+  ((((_.0 _.1 _.2 _.3 _.4 _.5) (_.0 _.1 _.6 _.7 _.8 _.9))
+     ((_.1 . _.0) . _.10))
+    (=/= ((_.0 _.2)) ((_.0 _.4)) ((_.0 _.6)) ((_.0 _.8))))
+  ((((_.0 _.1 _.2 _.3 _.4 _.5)) ((_.5 . _.4) . _.6))
+    (=/= ((_.0 _.4)) ((_.2 _.4)))))
+</pre>
+
+<h2 id="3color">3-color</h2>
+
+<pre>
+|#
+
+(define (3coloro graph red green blue)
+  (conde
+    ((== graph empty-set))
+    ((fresh (u v rest)
+       (== graph (set rest (set empty-set u v)))
+       (conde
+         ((ino u red)   (ino v green))
+         ((ino u red)   (ino v blue))
+         ((ino u green) (ino v red))
+         ((ino u green) (ino v blue))
+         ((ino u blue)  (ino v red))
+         ((ino u blue)  (ino v green)))
+       (3coloro rest red green blue)))))
+
+(define (3coloro/1 graph red green blue)
+  (disjo red green)
+  (disjo red blue)
+  (disjo green blue)
+  (3coloro graph red green blue))
+
+(define (3coloro/2 graph red green blue)
+  (3coloro graph red green blue)
+  (disjo red green)
+  (disjo red blue)
+  (disjo green blue))
+
+(define triangle
+  (set
+    empty-set
+    (set empty-set 0 1)
+    (set empty-set 0 2)
+    (set empty-set 1 2)))
+
+(define diamond
+  (set
+    empty-set
+    (set empty-set 0 1)
+    (set empty-set 0 2)
+    (set empty-set 1 2)
+    (set empty-set 1 3)
+    (set empty-set 2 3)))
+
+(define k4
+  (set
+    empty-set
+    (set empty-set 0 1)
+    (set empty-set 0 2)
+    (set empty-set 1 2)
+    (set empty-set 1 3)
+    (set empty-set 2 3)
+    (set empty-set 0 3)))
+
+(define (3coloro/enum graph red green blue)
+  (conde
+    ((== graph empty-set))
+    ((fresh (u v rest)
+       (== graph (set rest (set empty-set u v)))
+       (conde
+         (( ino u red) (!ino u green) (!ino u blue)
+          (!ino v red) ( ino v green) (!ino v blue))
+         (( ino u red) (!ino u green) (!ino u blue)
+          (!ino v red) (!ino v green) ( ino v blue))
+         ((!ino u red) ( ino u green) (!ino u blue)
+          ( ino v red) (!ino v green) (!ino v blue))
+         ((!ino u red) ( ino u green) (!ino u blue)
+          (!ino v red) (!ino v green) ( ino v blue))
+         ((!ino u red) (!ino u green) ( ino u blue)
+          ( ino v red) (!ino v green) (!ino v blue))
+         ((!ino u red) (!ino u green) ( ino u blue)
+          (!ino v red) ( ino v green) (!ino v blue)))
+       (3coloro/enum rest red green blue)))))
+
+(define (try graph)
+  (run 1 (q) (fresh (x y z) (== q `(,x ,y ,z))
+    (3coloro/enum graph x y z))))
+#|
+</pre>
+
 <h2 id="hamiltonian-graphs">Hamiltonian graphs</h2>
 
 <p>
@@ -865,15 +1110,18 @@ need to be visited. It is also parameterized on what vertex to start from.
 
 <pre>
 |#
+
 (defrel (hamiltoniano/rec from unvisited edges path)
   (conde
     ((== unvisited #f) (== path '()))
     ((fresh (edge rest-edges rest-path rest-unvisited next)
        (== path `(,edge . ,rest-path))
+       (=/= from next)
        (pairingo from next edge)
        (conjo edge rest-edges edges)
        (conjo next rest-unvisited unvisited)
        (hamiltoniano/rec next rest-unvisited rest-edges rest-path)))))
+
 #|
 </pre>
 
@@ -886,11 +1134,92 @@ vertices whose labels are anything other than [0, N).
 </p>
 
 <p>
-But I don't know how to generate the set {0 ... N-1}. It would need to operate
-similar to Python's <code>range</code> function. That doesn't stop me from
-manually providing that set and starting vertex, like in the following query
-for 5 Hamiltonian graphs each with 4 vertices.
+Thus it would be nice to have a definition that relates a number N to the set
+{0..N-1}.
 </p>
+
+<h3 id="natset-range">Sets of naturals {0..n-1}</h3>
+
+<p>
+To align naming conventions with Python's <code>range</code> function, let this
+relation be known as <code>natset-rangeo</code>.
+</p>
+
+<pre>
+|#
+
+(defrel (natset-rangeo/v1 n s)
+  (conde
+    ((== n '()) (== s #f))
+    ((fresh (n-1 s-n-1)
+       (pluso '(1) n-1 n)
+       (conjo n-1 s-n-1 s)
+       (natset-rangeo/v1 n-1 s-n-1)))))
+
+#|
+</pre>
+
+<p>
+This works, but it is very slow and very space-inefficient.
+</p>
+
+<pre>
+> (time (and (run 10 (a b) (natset-rangeo/v1 a b)) #f))
+(time (and (run 10 ...) ...))
+    78 collections
+    0.750000000s elapsed cpu time, including 0.140625000s collecting
+    1.980415400s elapsed real time, including 0.345641800s collecting
+    649904080 bytes allocated, including 628027008 bytes reclaimed
+#f
+> (time (and (run 11 (a b) (natset-rangeo/v1 a b)) #f))
+(time (and (run 11 ...) ...))
+    194 collections
+    2.375000000s elapsed cpu time, including 0.734375000s collecting
+    5.856774800s elapsed real time, including 1.351882100s collecting
+    1624130512 bytes allocated, including 1592387424 bytes reclaimed
+#f
+> (time (and (run 12 (a b) (natset-rangeo/v1 a b)) #f))
+(time (and (run 12 ...) ...))
+    716 collections
+    9.843750000s elapsed cpu time, including 2.656250000s collecting
+    26.514091900s elapsed real time, including 6.865238700s collecting
+    6004670192 bytes allocated, including 5907913968 bytes reclaimed
+#f
+> (time (and (run 13 (a b) (natset-rangeo/v1 a b)) #f))
+(time (and (run 13 ...) ...))
+    1129 collections
+    21.156250000s elapsed cpu time, including 6.328125000s collecting
+    44.833848200s elapsed real time, including 12.457083900s collecting
+    9460602608 bytes allocated, including 9505773472 bytes reclaimed
+#f
+</pre>
+
+<p>
+This is frustratingly slow. Since there is a one-to-one relationship between a
+natural number N and the corresponding complete set of naturals {0 ... N-1},
+when I give a fully ground natural number, I expect its corresponding set to be
+immediately computed, just like how unifying anything with a fully ground term
+will succeed or fail in constant time.
+</p>
+
+<p>
+Thus <code>hamiltoniano</code> is a unary relation on a directed graph with
+vertices labelled 0 to N-1 such that starting from any vertex (less than N),
+there exists a path through every vertex.
+</p>
+
+<pre>
+|#
+
+(defrel (hamiltoniano g path)
+  (fresh (n start unvisited unvisited-start rest u v uv)
+    (== path `(,start . ,rest))
+    (set-rangeo unvisited n)
+    (conjo uv unvisited-start unvisited)
+    (hamiltoniano/rec start unvisited-start g rest)))
+
+#|
+</pre>
 
 <pre>
 > (run 5 (edges path)
@@ -928,4 +1257,328 @@ figure out the relationships.
 
 <img src="img/cartesian-product.png">
 
+<p>
+The picture shows that <code>l1</code> is nonempty. It has a head
+<code>a1</code> and a tail <code>d1</code>. Since <code>d1</code> is a sublist
+we can define <code>d1*l2</code>, that is, the Cartesian product of
+<code>d1</code> and <code>l2</code>.
+</p>
+
+<p>
+But this recursive result <code>d1*l2</code> is not the only contributor to the
+overall result <code>l1*l2</code>--a prefix involving <code>a1</code> and
+<code>l1</code> is also needed. Let this prefix be called the <i>fusion</i> of
+<code>a1</code> and <code>l1</code>, defined below.
+</p>
+
+<pre>
 |#
+
+(defrel (fuseo x l fusion)
+  (conde
+    ((== l '()) (== fusion '()))
+    ((fresh (a d rec)
+       (== l `(,a . ,d))
+       (== fusion `((,x ,a) . ,rec))
+       (fuseo x d rec)))))
+
+#|
+</pre>
+
+<p>
+With this helper relation, the first version of a Cartesian product relation
+can be written.
+</p>
+
+<pre>
+|#
+
+(defrel (cartesian-producto/v1 l1 l2 l1*l2)
+  (conde
+    ((== l1 '()) (== l1*l2 '()))
+    ((fresh (a1 d1 fusion d1*l2)
+       (== l1 `(,a1 . ,d1))
+       (fuseo a1 l2 fusion)
+       (appendo fusion d1*l2 l1*l2)
+       (cartesian-producto/v1 d1 l2 d1*l2)))))
+
+#|
+</pre>
+
+<h2 id="length">A tricky relation, <code>lengtho</code></h2>
+<p>
+Writing a relation between a list and the Oleg numeral representation of its
+length is not straightforward.
+</p>
+
+<p>
+At first, this seems like a simple translation from the recursive definition
+of the length <i>function</i>. The following definition is adapted from TRS2e
+page 104, box 120:
+</p>
+
+<pre>
+|#
+
+(defrel (lengtho/1 l n)
+  (conde
+    ((== l '()) (== n '()))
+    ((fresh (a d n-1)
+       (== l `(,a . ,d))
+       (pluso n-1 '(1) n)
+       (lengtho/1 d n-1)))))
+
+#|
+</pre>
+
+<p>
+In box 121, the relation is tested with <code>run 1</code>:
+</p>
+
+<pre>
+> (run 1 (n) (lengtho/1 '(jicama rhubarb guava) n))
+((1 1))
+</pre>
+
+<p>
+What happens if we ask for all answers? Since a list has only one length,
+we expect it to succeed once and halt.
+</p>
+
+<pre>
+> (run* (n) (lengtho/1 '(jicama rhubarb guava) n))
+...
+</pre>
+
+<p>
+Instead, the query runs forever! It cannot determine that the search is
+complete.
+</p>
+
+<p>
+However, <code>run*</code> works for a different test. This query asks for
+all lists that have 5 elements:
+</p>
+
+<pre>
+> (run* (ls) (lengtho/1 ls '(1 0 1)))
+((_.0 _.1 _.2 _.3 _.4))
+</pre>
+
+<p>
+This query halts after producing one term that represents all lists of
+length 5.
+</p>
+
+<p>
+Here is an alternate definition that recurs on <code>n</code> rather than
+on the list. We use the standard recursion pattern over Oleg numbers. An
+Oleg number is either:
+</p>
+<ul>
+  <li>zero, or</li>
+  <li>2n, where n is positive, or</li>
+  <li>2n+1</li>
+</ul>
+
+<p>
+Therefore, the corresponding list must be either empty, double the length
+of another list, or one more than double the length of another list. This
+definition factors out the "double length" computation to avoid redundancy:
+</p>
+
+<pre>
+|#
+
+(defrel (lengtho/2 l n)
+  (conde
+    ((== n '()) (== l '()))
+    ((fresh (a d plus-one rec 2rec)
+       (== n `(,a . ,d))
+       (conde
+         ((== a 0) (poso d) (== l 2rec))
+         ((== a 1) (== l `(,plus-one . ,2rec))))
+       (double-lengtho rec 2rec)
+       (lengtho/2 rec d)))))
+
+
+#|
+</pre>
+
+<p>
+<code>lengtho/2</code> uses a helper relation, <code>double-lengtho</code>,
+defined as follows:
+</p>
+
+<pre>
+|#
+
+(defrel (double-lengtho l 2l)
+  (conde
+    ((== l '()) (== 2l '()))
+    ((fresh (x y z d 2d)
+       (== l `(,x . ,d))
+       (== 2l `(,y ,z . ,2d))
+       (double-lengtho d 2d)))))
+
+#|
+</pre>
+
+<p>
+This is straightforward to write. Exercise for the reader: Write a relation
+over two lists that succeeds if there exists some n such that one list has
+length 2n+1 while the other has length 7n+3.
+</p>
+
+<p>
+We can test <code>lengtho/2</code> with the same queries:
+</p>
+
+<pre>
+> (run 1 (n) (lengtho/2 '(jicama rhubarb guava) n))
+((1 1))
+
+> (run* (n) (lengtho/2 '(jicama rhubarb guava) n))
+...
+
+> (run* (ls) (lengtho/2 ls '(1 0 1)))
+...
+</pre>
+
+<p>
+<code>lengtho/2</code> diverges on both <code>run*</code> cases! We need a
+third implementation that takes a fundamentally different approach.
+</p>
+
+<p>
+This third relation steps outside the relational paradigm. To paraphrase
+Olin Shivers, it's okay to cheat as long as you don't get caught.
+</p>
+
+<p>
+We inspect the list and its Oleg length manually using miniKanren's
+<code>project</code> operator. This operator gives control back to the host
+language to construct a miniKanren goal. <code>project</code> allows you to
+examine logic terms in their current state (walked in the substitution) and
+construct goals based on those values.
+</p>
+
+<p>
+Using <code>project</code> responsibly requires careful consideration—it
+does not provide safety guarantees. It's easy to accidentally write unsound
+or incomplete relational programs with <code>project</code>, so we must be
+very careful.
+</p>
+
+<p>
+Despite these risks, <code>project</code> can help us write a robust version
+of <code>lengtho</code>. Here's the approach:
+</p>
+
+<p>
+Within a <code>project</code>, if <code>l</code> is a proper list, it has
+exactly one length. Unification can enforce this one-to-one relationship. If
+<code>l</code> is a partially instantiated list (a term that subsumes lists),
+it must subsume an infinite family of lists. The same applies if <code>l</code>
+is a fresh variable. If <code>l</code> is neither a proper list, nor a dotted
+list with a variable tail, nor a fresh variable, then <code>l</code> can
+<em>never</em> unify with a list.
+</p>
+
+<p>
+Before implementing the <code>project</code> analysis, let's write host
+language functions to recognize these cases. Scheme provides <code>list?</code>
+for proper lists, and <code>mk.scm</code> provides <code>var?</code> for fresh
+variables. We only need to define <code>subsumes-list?</code>:
+</p>
+
+<pre>
+|#
+
+(define (subsumes-list? l)
+  (or
+    (var? l)
+    (and
+      (pair? l)
+      (subsumes-list? (cdr l)))))
+
+#|
+</pre>
+
+<p>
+If <code>l</code> is a fully instantiated list, it has exactly one length,
+so we unify <code>n</code> with that length. If <code>l</code> could unify
+with a list but isn't fully instantiated, it unifies with an infinite family
+of lists. We enumerate these by grounding <code>n</code> to any Oleg number
+and using an existing <code>lengtho</code> that works correctly when
+<code>n</code> is ground (like <code>lengtho/1</code>). Otherwise, we fail.
+</p>
+
+<pre>
+|#
+
+(defrel (lengtho/3 l n)
+  (project (l n)
+    (cond
+      ((list? l)
+       (== n (build-num (length l))))
+      ((subsumes-list? l)
+       (fresh () (olego n) (lengtho/1 l n)))
+      (else fail))))
+
+#|
+</pre>
+
+<p>
+Let's test it:
+</p>
+
+<pre>
+> (run* (n) (lengtho/3 '(jicama rhubarb guava) n))
+((1 1))
+> (run* (ls) (lengtho/3 ls '(1 0 1)))
+((_.0 _.1 _.2 _.3 _.4))
+</pre>
+
+<p>
+It halts on both queries! Now consider one more test case:
+</p>
+
+<pre>
+> (run 3 (q) (lengtho/3 q q))
+(() (1) (0 1))
+> (run 4 (q) (lengtho/3 q q))
+...
+</pre>
+
+<p>
+The query for Oleg numerals that describe their own length runs forever when
+requesting a fourth solution. It can be proved by induction that no Oleg
+number greater than 2 describes its own length. While this fact could be
+encoded in another <code>lengtho</code> implementation, handling shared
+variables creates complications. The paper that introduced Oleg numerals,
+<a href="https://okmij.org/ftp/Prolog/Arithm/arithm.pdf">Pure, Declarative
+and Constructive Relations</a>, omits cases with shared variables since they
+can represent arbitrary Diophantine equations, which are undecidable. I believe
+<code>lengtho</code> should match this expectation: running forever with shared
+variables is acceptable.
+</p>
+
+<p>
+Therefore, let <code>lengtho/3</code> be the canonical implementation of the
+<code>lengtho</code> relation.
+</p>
+
+<pre>
+|#
+
+(defrel (lengtho l n)
+  (lengtho/3 l n))
+
+#|
+</pre>
+
+|#
+
+
+
