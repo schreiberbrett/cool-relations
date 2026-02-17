@@ -308,6 +308,57 @@ Pure, Declarative, and Constructive Arithmetic Relations by Kiselyov, et al.
 </a>
 for further details.
 
+<h3 id="less-than-relations">Less-than relations</h3>
+<p>
+Many relational programs require bounding one natural number to be less than
+another. Here's a standard recursive definition over Peano numerals m and n: m
+is less than n either if m is zero and n is nonzero (i.e., a successor to a
+natural number n-1) or if both m and n are nonzero, but m-1 is less than n-1.
+</p>
+
+<pre>
+|#
+
+(defrel (peano-lto/1 m n)
+  (fresh (n-1)
+    (== n `(s . ,n-1))
+    (conde
+      ((== m '()))
+      ((fresh (m-1)
+         (== m `(s . ,m-1))
+         (peano-lto/1 m-1 n-1))))))
+
+#|
+</pre>
+
+<pre>
+> (run 5 (m n) (peano-lto/1 m n))
+((() (s . _.0))
+ ((s) (s s . _.0))
+ ((s s) (s s s . _.0))
+ ((s s s) (s s s s . _.0))
+ ((s s s s) (s s s s s . _.0)))
+</pre>
+
+<p>
+This is decent. Each row, when run with fresh variables, represents an infinite
+subset of answers. For example, the first row implies that 0 &lt; 1, and 0 &lt;
+2, and 0 &lt; 3, and so on. The second row implies that 1 &lt; 2, and 1 &lt; 3,
+and so on.
+</p>
+
+<p>
+This does capture the set of all pairs of natural numbers where m is less than
+n. And it covers an infinite subset each time.
+</p>
+
+<p>
+But it's not great because during execution, any argument to m will be fully
+ground when it comes out. Which means that when m is used later on, it's only
+ever going to be one possible natural number. This can lead to undesirable
+<i>generate-and-test</i> behavior.
+</p>
+
 <h2 id="sets-of-naturals">Sets of Oleg numerals</h2>
 <p>
 Here's an idea on how to represent sets of natural numbers in miniKanren.
@@ -328,6 +379,7 @@ I'd say {0 ... 3, 4, ... }.
 
 <pre id="elemo">
 |#
+
 (defrel (elemo n s)
   (fresh (l m r)
     (== s `(,l ,m ,r))
@@ -339,6 +391,7 @@ I'd say {0 ... 3, 4, ... }.
            ((== a 0) (poso d) (== rec l))
            ((== a 1) (== rec r)))
          (elemo d rec))))))
+
 #|
 </pre>
 
