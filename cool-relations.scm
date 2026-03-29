@@ -390,7 +390,22 @@ non-membership.
 If you were to ask me which subset of the naturals contains 4, and 0, and 3,
 I'd say {0 ... 3, 4, ... }.
 
+(run* (q)
+  (elemo '(0 0 1) q)
+  (elemo '() q)
+  (elemo '(1 1) q))
+
+
 <img src="img/relational-natset.svg">
+
+
+
+
+_.0 ----
+
+0 
+
+
 
 |#
 
@@ -472,7 +487,7 @@ chosen to break it up into three cases (zero, one, and greater-than-one) in
 order to ensure all Oleg numbers involved end in a 1.
 |#
 
-(defrel (pairingo i j p)
+(defrel (pairingo i j p) ; (Nat * Nat) <-> Nat
   (conde
     ((== i '()) (== j '()) (== p '()))
     ((== i '(1)) (== j '()) (== p '(1)))
@@ -494,9 +509,10 @@ order to ensure all Oleg numbers involved end in a 1.
        (pairingo i//2 j//2 rec)))))
 
 #|
-With this relation it is now possible to represent a set of pairs as sets of
-their pairings. This also allows an efficient representation of graphs as a set
-of directed edges.
+
+
+
+
 
 
 Divisibility by three
@@ -1173,6 +1189,78 @@ exists a path through every vertex.
       path))
 
 
+Vertex Cover
+============
+
+See Andrey Mokhov's complete characterization of graphs:
+https://dl.acm.org/doi/epdf/10.1145/3122955.3122956
+I will call these Mokhov graphs.
+
+|#
+
+(defrel (mokhovo g)
+  (fresh (a g1 g2 o/c)
+    (conde
+      ((== g `(vertex ,a)))
+      
+      ((== g `(,o/c ,g1 ,g2))
+       (conde ((== o/c 'overlay)) ((== o/c 'connect)))
+       (mokhovo g1)
+       (mokhovo g2)))))
+
+#|
+
+Here is a simple vertex cover relation using that characterization of graphs,
+except that 
+Let g be a Mokhov graph on free vertices.
+Let s be a CLP-set subset of those vertices that covers g
+
+There may be other coverings for this graph. The covering is not always minimal.
+|#
+
+(defrel (vertex-covero g s)
+  (fresh (a g1 g2 s1 s2)
+    (conde
+      ; A graph of one vertex is minimally covered by a singleton set
+      ((== g `(vertex ,a))
+       (== s (set a)))
+      
+      ; An overlay of two graphs g1 and g2is minimally covered by the union of
+      ; the coverings of g1 and g2.
+      ((== g `(overlay ,g1 ,g2))
+       (uniono s1 s2 s)
+       (vertex-covero g1 s1)
+       (vertex-covero g2 s2))
+
+      ; In any connected graph, g1 exactly covers g2. So the vertices of g1
+      ; suffices for s. Suffices, not necessitates.
+      ((== g `(connect ,g1 ,g2))
+       (verticeso g1 s)))))
+
+#|
+
+Finding the vertices in a Mokhov graph treats connect and overlay cases the
+same.
+
+|#
+
+(defrel (verticeso g v)
+  (fresh (a v1 v2 g1 g2 o/c)
+    (conde
+      ((== g `(vertex ,a))
+       (== v (set a)))
+      
+      ((== g `(,o/c ,g1 ,g2))
+       (uniono v1 v2 v)
+       (verticeso g1 v1)
+       (verticeso g2 v2)))))
+
+     
+#|
+
+
+
+
 The Cartesian product
 =====================
 
@@ -1284,14 +1372,15 @@ is fresh, and d1*l2 is just l1*l2. The recursive call is just as fresh as the
 parent call and so the query diverges.
 
 There are two strategies to employ that lead to three new implementations:
+
 cartesian-producto/2: Combine the fuseo and appendo relations into
-                       fuse-and-appendo, which avoids the intermediate list
-                       named "fusion".
+                      fuse-and-appendo, which avoids the intermediate list
+                      named "fusion".
 
 cartesian-producto/3: Add a second base-case for when l2 is empty, and let the
-                       recursive case assert that both l1 and l2 are nonempty.
-                       This requires splitting the relation into four non-
-                       overlapping cases.
+                      recursive case assert that both l1 and l2 are nonempty.
+                      This requires splitting the relation into four non-
+                      overlapping cases.
 
 cartesian-producto/4: Apply both of these strategies.
 
@@ -1712,7 +1801,167 @@ is an ideal relation to emulate: ==. Unification in miniKanren is the most
 beautiful correspondence, because it only ever succeeds finitely (and
 efficiently) or fails. It is the fundamental relation that powers all others.
 
+
+Coprimality
+===========
+
+Consider the coprime relation between two positive natural numbers. Two numbers
+are coprime if they have no divisors in common other than 1. Therefore 1 is
+coprime with itself, and in fact 1 is coprime with every positive natural
+number.
+
+At first this seems like a negative definition ("no other factors") and thus
+difficult to express in miniKanren. However, there are a few ways to define this
+positively.
+
+First we can reformulate the definition to say that two numbers are coprime if
+their greatest common divisor is 1.
+
 |#
+
+(defrel (coprimeo/1 x y)
+  (gcdo x y '(1)))
+
+#|
+
+Let's derive a gcdo relation from the Euclidean algorithm.
+
+|#
+
+(defrel (gcdo x y gcd)
+  (poso x)
+  (poso y)
+  (poso gcd)
+  (conde
+    ((== x y) (== x gcd))
+    ((fresh (min max max-min)
+       (conde
+         ((== x min) (== y max))
+         ((== x max) (== y min)))
+       (<o min max)
+       (pluso min max-min max)
+       (gcdo min max-min gcd)))))
+
+#|
+
+There also is a beautiful recursive definition for pairs of coprimes based on
+the Calkin-Wilf tree: https://en.wikipedia.org/wiki/Calkin%E2%80%93Wilf_tree.
+
+The Calkin-Wilf tree enumerates every positive rational in reduced form by
+starting with 1/1, then deriving two children 1/2 and 2/1. Then, 1/2 has two
+children 1/3 and 3/2, and so on. The general pattern is that a parent a/b will
+have two children: a+b/b and a/a+b.
+
+                    1/1
+           /                  \
+        1/2                    2/1
+     /        \            /         \
+   1/3        3/2        2/3        3/1
+  /   \      /   \      /   \      /    \
+1/4   4/3  3/5   5/2  2/5   5/3  3/4    4/1
+
+... and so on.
+
+
+Thus the pairs of coprimes can be defined simply as the members of this tree,
+although notice we need to go up the tree to reach 1/1 and halt instead of going
+down the tree.
+
+|#
+
+(defrel (coprimeo/2 x y)
+  (poso x)
+  (poso y)
+  (conde
+    ((== x '(1)) (== y '(1)))
+    ((fresh (a b a+b)
+       (conde
+         ((== x a) (== y a+b))
+         ((== x a+b) (== y b)))
+       (pluso a b a+b)
+       (coprimeo/2 a b)))))
+
+#|
+
+Which implementation is better? Both implementations fully ground their
+arguments, and both depend on pluso. Arguably, comprimeo/1 is just a wrapper
+around gcdo, which could certainly be improved. I'm partial to coprimeo/2
+because it is a recursive definition.
+
+For now, let's time them both against generating the first 400 coprime pairs,
+and then recognizing a large difficult coprime pair.
+
+I use the pattern (time (and ... #f)) to hide the results being enumerated.
+
+> (time (and (run 400 (a b) (coprimeo/1 a b)) #f))
+(time (and (run 400 ...) ...))
+    932 collections
+    21.982330746s elapsed cpu time, including 3.051045930s collecting
+    21.985303101s elapsed real time, including 3.061051868s collecting
+    7816776848 bytes allocated, including 7798836576 bytes reclaimed
+#f
+> (time (and (run 400 (a b) (coprimeo/2 a b)) #f))
+(time (and (run 400 ...) ...))
+    632 collections
+    14.084720349s elapsed cpu time, including 2.159625623s collecting
+    14.114762861s elapsed real time, including 2.172190916s collecting
+    5293228480 bytes allocated, including 5342749776 bytes reclaimed
+#f
+
+So comprimeo/2 generated 400 coprimes 7 seconds faster than coprimeo/1. Now
+let's see which one recognizes sooner that 99,991,589 and 99,991,791 are
+coprime.
+
+> (time (run* (q) (coprimeo/1 (build-num 99991589) (build-num 99991791))))
+(time (run* (q) ...))
+    2506 collections
+    55.573222318s elapsed cpu time, including 2.966061872s collecting
+    55.578419515s elapsed real time, including 2.985648703s collecting
+    21010465424 bytes allocated, including 20881078976 bytes reclaimed
+(_.0)
+> (time (run* (q) (coprimeo/2 (build-num 99991589) (build-num 99991791))))
+(time (run* (q) ...))
+    3488 collections
+    62.753923712s elapsed cpu time, including 3.482096314s collecting
+    62.760236926s elapsed real time, including 3.509143067s collecting
+    29243540064 bytes allocated, including 29250815504 bytes reclaimed
+(_.0)
+
+Here, coprimeo/1 wins.
+
+Finally, let's look at how quickly both recognize that two numbers are NOT
+coprime.
+
+> (time (run* (q) (coprimeo/1
+    (build-num (* 106963 106979))
+    (build-num (* 106963 106993)))))
+(time (run* (q) ...))
+    982 collections
+    24.630064755s elapsed cpu time, including 0.746481363s collecting
+    24.632475812s elapsed real time, including 0.754340709s collecting
+    8226879600 bytes allocated, including 8194513440 bytes reclaimed
+()
+> (time (run* (q) (coprimeo/2
+    (build-num (* 106963 106979))
+    (build-num (* 106963 106993)))))
+(time (run* (q) ...))
+    1359 collections
+    26.615857171s elapsed cpu time, including 0.843734284s collecting
+    26.618963833s elapsed real time, including 0.854282019s collecting
+    11396466688 bytes allocated, including 11386379504 bytes reclaimed
+()
+
+They fare about the same. Even though coprimeo/2 seems more beautiful to me,
+coprimeo/1 is just as good at recognition (although clearly worse at
+enumeration). I will look into optimizing gcdo, which right now has a
+conjunction of <o, pluso, and gcdo.
+
+|#
+
+
+
+
+
 
 
 

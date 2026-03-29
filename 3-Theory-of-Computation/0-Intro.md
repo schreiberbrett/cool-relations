@@ -1,2 +1,0 @@
-miniKanren is great at teaching theory of computation, because it models nondeterministic programming very well.
-This chapter is a collection of relations related to regular languages, context free languages, and NP-complete problems.
